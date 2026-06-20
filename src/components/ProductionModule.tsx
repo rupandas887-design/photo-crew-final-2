@@ -1987,26 +1987,16 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                                   type="button"
                                   onClick={() => {
                                     setActiveWorkflowProd(prod);
-                                    setWfEditor(prod.editor_assigned || 'Unassigned');
-                                    setWfTargetDeliveryDate(prod.target_delivery_date || '');
-                                    setWfPriority(prod.project_priority || 'Medium');
-                                    setWfProjectNotes(prod.project_notes || prod.remarks || '');
-                                    setWfInternalComments(prod.internal_comments || '');
+                                    setWfEditor('');
+                                    setWfTargetDeliveryDate('');
+                                    setWfPriority('');
+                                    setWfProjectNotes('');
+                                    setWfInternalComments('');
                                     setWfError('');
                                     
-                                    const assignedForThis = editorAssignments.filter(a => a.production_id === prod.production_id);
-                                    setSelectedStaffIds(assignedForThis.map(a => a.staff_id));
-                                    if (assignedForThis.length > 0) {
-                                      setWfSpeciality(assignedForThis[0].speciality);
-                                      setAssignmentRows(assignedForThis.map(a => ({
-                                        speciality: a.speciality,
-                                        staffId: a.staff_id,
-                                        staffName: a.staff_name
-                                      })));
-                                    } else {
-                                      setWfSpeciality('');
-                                      setAssignmentRows([{ speciality: '', staffId: '', staffName: '' }]);
-                                    }
+                                    setSelectedStaffIds([]);
+                                    setWfSpeciality('');
+                                    setAssignmentRows([{ speciality: '', staffId: '', staffName: '' }]);
                                     
                                     setWorkflowActionType('assign_editor');
                                   }}
@@ -5302,6 +5292,7 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                           onChange={(e) => setWfPriority(e.target.value as any)}
                           className="w-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-100 rounded-xl px-3 h-9.5 cursor-pointer font-mono focus:outline-[#7c3aed]"
                         >
+                          <option value="">-- Choose Priority --</option>
                           <option value="Low">Low</option>
                           <option value="Medium">Medium</option>
                           <option value="High">High</option>
@@ -5383,6 +5374,15 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                           setWfError('');
 
                           // 1. Validation
+                          if (!wfTargetDeliveryDate) {
+                            setWfError('Please select a Target Delivery Date.');
+                            return;
+                          }
+                          if (!wfPriority) {
+                            setWfError('Please select a Project Priority.');
+                            return;
+                          }
+
                           let hasError = false;
                           for (let i = 0; i < assignmentRows.length; i++) {
                             const r = assignmentRows[i];
@@ -6284,7 +6284,10 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                 </div>
                 <button
                   type="button"
-                  onClick={() => setIsStaffModalOpen(false)}
+                  onClick={() => {
+                    setIsStaffModalOpen(false);
+                    setEditingStaffMember(null);
+                  }}
                   className="p-1.5 hover:bg-zinc-900 text-zinc-500 hover:text-white rounded-lg cursor-pointer"
                 >
                   <X className="w-4 h-4" />
@@ -6426,7 +6429,10 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                     <button
                       type="button"
                       disabled={staffFormSaving}
-                      onClick={() => setIsStaffModalOpen(false)}
+                      onClick={() => {
+                        setIsStaffModalOpen(false);
+                        setEditingStaffMember(null);
+                      }}
                       className="px-4 py-2 bg-zinc-900 hover:bg-zinc-850 text-zinc-400 hover:text-white rounded-xl cursor-pointer duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Cancel

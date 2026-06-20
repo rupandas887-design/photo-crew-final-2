@@ -1625,10 +1625,64 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       if (dbLeads) {
-        const mappedLeads = dbLeads.map(ld => ({
-          ...ld,
-          status: ld.current_status || ld.status
-        }));
+        const mappedLeads = dbLeads.map(ld => {
+          const assocOrder = dbOrders?.find(o => o.lead_id === ld.lead_id);
+          const assocPayment = assocOrder
+            ? dbPayments?.find(p => p.order_id === assocOrder.order_id)
+            : null;
+          const rf = assocOrder
+            ? dbRawFootage?.find(f => f.order_id === assocOrder.order_id)
+            : null;
+          const prod = rf
+            ? dbProduction?.find(p => p.tracking_id === rf.tracking_id)
+            : null;
+          const op = assocOrder
+            ? dbOperations?.find(o => o.order_id === assocOrder.order_id)
+            : null;
+
+          // Compute final_amount and received_amount
+          const final_amount = assocPayment
+            ? Number(assocPayment.quotation_amount || 0)
+            : (assocOrder ? Number(assocOrder.quotation_amount || 0) : Number(ld.budget || 0));
+
+          const received_amount = assocPayment
+            ? Number(assocPayment.advance_received || 0) + Number(assocPayment.final_payment_received || 0)
+            : (assocOrder ? Number(assocOrder.advance_received || 0) : 0);
+
+          // Compute assigned staff
+          const staffNames: string[] = [];
+          if (op) {
+            if (op.photographer_assigned && op.photographer_assigned !== 'None' && op.photographer_assigned !== 'Unassigned') staffNames.push(op.photographer_assigned);
+            if (op.videographer_assigned && op.videographer_assigned !== 'None' && op.videographer_assigned !== 'Unassigned') staffNames.push(op.videographer_assigned);
+            if (op.drone_operator_assigned && op.drone_operator_assigned !== 'None' && op.drone_operator_assigned !== 'Unassigned') staffNames.push(op.drone_operator_assigned);
+            if (op.assistant_assigned && op.assistant_assigned !== 'None' && op.assistant_assigned !== 'Unassigned') staffNames.push(op.assistant_assigned);
+          }
+          const orderSAs = (staffAssignmentsRes?.data || []).filter(sa => sa.order_id === assocOrder?.order_id && sa.assignment_status !== 'Cancelled');
+          orderSAs.forEach(sa => {
+            if (sa.staff_name && !staffNames.includes(sa.staff_name)) {
+              staffNames.push(sa.staff_name);
+            }
+          });
+          const assigned_staff = staffNames.join(', ');
+
+          // Compute assigned editor
+          const assigned_editor = prod?.editor_assigned || ld.assigned_editor || 'Unassigned';
+
+          // Determine current_status
+          // Real-time synchronization flow
+          const current_status = ld.current_status || assocOrder?.current_stage || prod?.editing_status || ld.status;
+
+          return {
+            ...ld,
+            status: current_status,
+            current_status,
+            assigned_staff,
+            assigned_editor,
+            final_amount,
+            received_amount,
+            created_at: ld.created_at || ld.created_date || new Date().toISOString()
+          };
+        });
         setLeads(mappedLeads);
         localStorage.setItem('erp_leads', JSON.stringify(mappedLeads));
       }

@@ -32,55 +32,45 @@ export const OperationsAnalytics: React.FC = () => {
   const activeRange = globalDateRange;
 
   // Filtered dataset variables
-  const filteredOrders = useMemo(() => {
-    return orders.filter(o => isDateInRange(o.event_date, activeRange));
-  }, [orders, activeRange]);
+  const filteredLeads = useMemo(() => {
+    return leads.filter(l => isDateInRange(l.created_date || l.event_date, activeRange));
+  }, [leads, activeRange]);
 
-  // Compute Card Metrics
-  const newOrdersCount = filteredOrders.filter(o => o.current_stage === 'New Order Received' || o.current_stage === 'Order Confirmed').length;
+  // Total New Orders = COUNT(status = 'Order Confirmed')
+  const newOrdersCount = filteredLeads.filter(l => l.status === 'Order Confirmed').length;
   
-  const eventsScheduledCount = filteredOrders.filter(o => 
-    o.current_stage === 'Event Scheduled' || o.current_stage === 'Operations Assigned'
-  ).length;
+  // Total Event Scheduled = COUNT(status = 'Event Scheduled')
+  const eventsScheduledCount = filteredLeads.filter(l => l.status === 'Event Scheduled').length;
 
-  const staffAssignedCount = useMemo(() => {
-    return filteredOrders.filter(o => {
-      const op = operations.find(x => x.order_id === o.order_id);
-      if (!op) return false;
-      const assigned = [op.photographer_assigned, op.videographer_assigned, op.drone_operator_assigned];
-      return assigned.some(name => name && name !== 'None' && name !== 'Unassigned');
-    }).length;
-  }, [filteredOrders, operations]);
+  // Staff Assigned = COUNT(status = 'Event Scheduled')
+  const staffAssignedCount = filteredLeads.filter(l => l.status === 'Event Scheduled').length;
 
-  const eventsCompletedCount = filteredOrders.filter(o => 
-    o.current_stage === 'Event Completed' || o.current_stage === 'Closed' || o.current_stage === 'Delivered'
-  ).length;
+  // Total Event Completed = COUNT(status = 'Event Completed')
+  const eventsCompletedCount = filteredLeads.filter(l => l.status === 'Event Completed').length;
 
-  const rawFootageReceivedCount = useMemo(() => {
-    return filteredOrders.filter(o => {
-      const footage = (rawFootage || []).find(f => f.order_id === o.order_id);
-      return (footage && footage.status === 'Received') || o.current_stage === 'Raw Footage Received';
-    }).length;
-  }, [filteredOrders, rawFootage]);
+  // Total Raw Footage Received = COUNT(status = 'Raw Footage Received')
+  const rawFootageReceivedCount = filteredLeads.filter(l => l.status === 'Raw Footage Received').length;
 
-  const upcomingEventsCount = filteredOrders.filter(o => o.event_date >= TODAY_REF).length;
-  const todaysEventsCount = filteredOrders.filter(o => o.event_date === TODAY_REF).length;
-  
-  const overdueEventsCount = filteredOrders.filter(o => 
-    o.event_date < TODAY_REF && 
-    o.current_stage !== 'Event Completed' && 
-    o.current_stage !== 'Closed' && 
-    o.current_stage !== 'Delivered'
+  // Event Completion Rate = (Event Completed ÷ Event Scheduled) × 100
+  const upcomingEventsCount = eventsScheduledCount > 0 
+    ? parseFloat(((eventsCompletedCount / eventsScheduledCount) * 100).toFixed(1))
+    : 0;
+
+  // Keep auxiliary counts for other layouts
+  const todaysEventsCount = filteredLeads.filter(l => l.event_date === TODAY_REF).length;
+  const overdueEventsCount = filteredLeads.filter(l => 
+    l.event_date < TODAY_REF && 
+    !['Event Completed', 'Raw Footage Received', 'Project Delivered', 'Project Closed', 'Closed'].includes(l.status)
   ).length;
 
   // Pie chart or Bar chart data for event types
   const eventTypeChartData = useMemo(() => {
     const counts: { [key: string]: number } = {};
-    filteredOrders.forEach(o => {
-      counts[o.event_type] = (counts[o.event_type] || 0) + 1;
+    filteredLeads.forEach(l => {
+      counts[l.event_type] = (counts[l.event_type] || 0) + 1;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a,b)=>b.value-a.value);
-  }, [filteredOrders]);
+  }, [filteredLeads]);
 
   const COLORS = ['#818CF8', '#10B981', '#34D399', '#FB7185', '#F59E0B', '#A78BFA'];
 

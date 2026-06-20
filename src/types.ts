@@ -108,6 +108,10 @@ export interface Lead {
   production_role?: string;
   delivery_target_date?: string;
   current_status?: string;
+  assigned_staff?: string;
+  final_amount?: number;
+  received_amount?: number;
+  created_at?: string;
 }
 
 export interface LeadPackage {

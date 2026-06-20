@@ -24,58 +24,95 @@ export const BusinessOverviewAnalytics: React.FC = () => {
   const activeRange = globalDateRange;
 
   // Filtered Datasets based on dates
-  const filteredOrders = useMemo(() => {
-    return orders.filter(o => {
-      const orderDate = o.created_at ? o.created_at.split('T')[0] : o.event_date;
-      return isDateInRange(orderDate, activeRange);
+  const filteredLeads = useMemo(() => {
+    return leads.filter(l => {
+      const leadDate = l.created_at ? l.created_at.split('T')[0] : l.event_date;
+      return isDateInRange(leadDate, activeRange);
     });
-  }, [orders, activeRange]);
+  }, [leads, activeRange]);
 
-  const filteredPayments = useMemo(() => {
-    return payments.filter(p => {
-      const o = orders.find(ord => ord.order_id === p.order_id);
-      const payDate = o?.created_at ? o.created_at.split('T')[0] : o?.event_date || TODAY_REF;
-      return isDateInRange(payDate, activeRange);
-    });
-  }, [payments, orders, activeRange]);
-
-  // 1. Revenue Analytics calculations
+  // Total Revenue = SUM(final_amount)
   const totalRevenue = useMemo(() => {
-    return filteredOrders.reduce((sum, o) => sum + (o.quotation_amount || 0), 0);
-  }, [filteredOrders]);
+    return filteredLeads.reduce((sum, l) => sum + (l.final_amount || l.budget || 0), 0);
+  }, [filteredLeads]);
 
+  // Total Received = SUM(received_amount)
   const totalReceived = useMemo(() => {
-    return filteredPayments.reduce((sum, p) => sum + (p.advance_received + p.final_payment_received), 0);
-  }, [filteredPayments]);
+    return filteredLeads.reduce((sum, l) => sum + (l.received_amount || 0), 0);
+  }, [filteredLeads]);
 
+  // Total Pending = SUM(final_amount - received_amount)
   const totalPendingAmount = useMemo(() => {
-    return filteredPayments.reduce((sum, p) => sum + p.balance_due, 0);
-  }, [filteredPayments]);
+    return filteredLeads.reduce((sum, l) => {
+      const final = l.final_amount || l.budget || 0;
+      const received = l.received_amount || 0;
+      return sum + Math.max(0, final - received);
+    }, 0);
+  }, [filteredLeads]);
 
   const partialPaymentAmount = useMemo(() => {
-    return filteredPayments
-      .filter(p => p.payment_status === 'Partially Paid')
-      .reduce((sum, p) => sum + p.advance_received, 0);
-  }, [filteredPayments]);
+    return filteredLeads.reduce((sum, l) => {
+      const final = l.final_amount || l.budget || 0;
+      const received = l.received_amount || 0;
+      if (received > 0 && received < final) {
+        return sum + received;
+      }
+      return sum;
+    }, 0);
+  }, [filteredLeads]);
 
   // Outstanding is balance_due
   const outstandingBalance = totalPendingAmount;
 
-  // 2. Event Analytics calculations
-  const totalEvents = filteredOrders.length;
+  // Total Events = COUNT(leads where status != 'New Lead' etc.)
+  const totalEvents = useMemo(() => {
+    const excludedStages = ['New Lead', 'Follow Up', 'Follow-Up', 'Quotation Sent', 'Negotiation', 'Lost Lead', 'Lost', 'Cancelled'];
+    return filteredLeads.filter(l => !excludedStages.includes(l.status)).length;
+  }, [filteredLeads]);
   
-  const completedEvents = filteredOrders.filter(o => 
-    o.current_stage === 'Event Completed' || o.current_stage === 'Closed' || o.current_stage === 'Delivered'
-  ).length;
+  // Completed Events = COUNT(status = 'Event Completed')
+  const completedEvents = useMemo(() => {
+    return filteredLeads.filter(l => l.status === 'Event Completed').length;
+  }, [filteredLeads]);
 
-  const upcomingEvents = filteredOrders.filter(o => o.event_date >= TODAY_REF).length;
-  const ongoingEvents = filteredOrders.filter(o => o.event_date === TODAY_REF).length;
-  const cancelledEvents = filteredOrders.filter(o => o.current_stage === 'Closed' && o.quotation_amount === 0).length;
+  const upcomingEvents = useMemo(() => {
+    const activeStages = ['Order Confirmed', 'Event Scheduled'];
+    return filteredLeads.filter(l => activeStages.includes(l.status) && l.event_date >= TODAY_REF).length;
+  }, [filteredLeads]);
 
-  // 3. Payment Analytics calculations
-  const fullyPaidEvents = filteredPayments.filter(p => p.payment_status === 'Fully Paid').length;
-  const partiallyPaidEvents = filteredPayments.filter(p => p.payment_status === 'Partially Paid').length;
-  const pendingPaymentEvents = filteredPayments.filter(p => p.payment_status === 'Pending').length;
+  const ongoingEvents = useMemo(() => {
+    return filteredLeads.filter(l => l.event_date === TODAY_REF).length;
+  }, [filteredLeads]);
+
+  const cancelledEvents = useMemo(() => {
+    return filteredLeads.filter(l => l.status === 'Lost Lead' || l.status === 'Cancelled').length;
+  }, [filteredLeads]);
+
+  // Fully Paid Events = COUNT(status = 'Project Closed' OR balance_amount = 0)
+  const fullyPaidEvents = useMemo(() => {
+    return filteredLeads.filter(l => {
+      const final = l.final_amount || l.budget || 0;
+      const received = l.received_amount || 0;
+      const isZeroBalance = (final - received) === 0;
+      const isProjectClosed = l.status === 'Project Closed' || l.status === 'Closed';
+      return isProjectClosed || isZeroBalance;
+    }).length;
+  }, [filteredLeads]);
+
+  const partiallyPaidEvents = useMemo(() => {
+    return filteredLeads.filter(l => {
+      const final = l.final_amount || l.budget || 0;
+      const received = l.received_amount || 0;
+      return received > 0 && received < final;
+    }).length;
+  }, [filteredLeads]);
+
+  const pendingPaymentEvents = useMemo(() => {
+    return filteredLeads.filter(l => {
+      const received = l.received_amount || 0;
+      return received === 0;
+    }).length;
+  }, [filteredLeads]);
 
   // 4. Team Analytics calculations
   const activeStaffCount = staff.filter(s => s.status === 'Active').length;
@@ -115,23 +152,16 @@ export const BusinessOverviewAnalytics: React.FC = () => {
       iter++;
     }
 
-    filteredOrders.forEach(o => {
-      const d = o.created_at ? o.created_at.split('T')[0] : o.event_date;
+    filteredLeads.forEach(l => {
+      const d = l.created_at ? l.created_at.split('T')[0] : l.event_date;
       if (datesMap[d]) {
-        datesMap[d].revenue += o.quotation_amount || 0;
-      }
-    });
-
-    filteredPayments.forEach(p => {
-      const o = orders.find(ord => ord.order_id === p.order_id);
-      const d = o?.created_at ? o.created_at.split('T')[0] : (o?.event_date || TODAY_REF);
-      if (datesMap[d]) {
-        datesMap[d].received += (p.advance_received + p.final_payment_received);
+        datesMap[d].revenue += (l.final_amount || l.budget || 0);
+        datesMap[d].received += (l.received_amount || 0);
       }
     });
 
     return Object.values(datesMap).sort((a,b)=>a.name.localeCompare(b.name));
-  }, [filteredOrders, filteredPayments, orders, activeRange]);
+  }, [filteredLeads, activeRange]);
 
   return (
     <div className="space-y-8">

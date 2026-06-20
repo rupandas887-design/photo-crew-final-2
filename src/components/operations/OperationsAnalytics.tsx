@@ -10,6 +10,7 @@ import { Staff, Order } from '../../types';
 
 export const OperationsAnalytics: React.FC = () => {
   const { 
+    leads,
     orders, 
     operations, 
     staff, 
@@ -88,21 +89,21 @@ export const OperationsAnalytics: React.FC = () => {
     const op = operations.find(o => o.order_id === orderId);
     const names: string[] = [];
     if (op) {
-      if (op.photographer_assigned) names.push(`${op.photographer_assigned} (Photo)`);
-      if (op.videographer_assigned) names.push(`${op.videographer_assigned} (Video)`);
-      if (op.drone_operator_assigned && op.drone_operator_assigned !== 'None') names.push(`${op.drone_operator_assigned} (Drone)`);
-      if (op.assistant_assigned && op.assistant_assigned !== 'None') names.push(`${op.assistant_assigned} (Assistant)`);
+      if (op.photographer_assigned && op.photographer_assigned !== 'Unassigned' && op.photographer_assigned !== 'unassigned') names.push(`${op.photographer_assigned} (Photo)`);
+      if (op.videographer_assigned && op.videographer_assigned !== 'Unassigned' && op.videographer_assigned !== 'unassigned') names.push(`${op.videographer_assigned} (Video)`);
+      if (op.drone_operator_assigned && op.drone_operator_assigned !== 'None' && op.drone_operator_assigned !== 'Unassigned' && op.drone_operator_assigned !== 'unassigned') names.push(`${op.drone_operator_assigned} (Drone)`);
+      if (op.assistant_assigned && op.assistant_assigned !== 'None' && op.assistant_assigned !== 'Unassigned' && op.assistant_assigned !== 'unassigned') names.push(`${op.assistant_assigned} (Assistant)`);
     }
 
     const sa = staffAssignments?.filter(s => s.order_id === orderId && s.assignment_status !== 'Cancelled') || [];
     sa.forEach(item => {
       const label = `${item.staff_name} (${item.staff_role})`;
-      if (!names.some(n => n.startsWith(item.staff_name))) {
+      if (item.staff_name && item.staff_name !== 'Unassigned' && item.staff_name !== 'unassigned' && !names.some(n => n.startsWith(item.staff_name))) {
         names.push(label);
       }
     });
 
-    return names.length > 0 ? names.join(', ') : 'No staff assigned yet';
+    return names.length > 0 ? names.join(', ') : 'Unassigned';
   };
 
   // Helper: Get Reporting Time of Event
@@ -113,17 +114,40 @@ export const OperationsAnalytics: React.FC = () => {
   };
 
   // Apply filters to data (Start Date, End Date, and Search Query)
-  const filteredOrders = orders.filter(o => {
+  const filteredOrders = leads.filter(l => {
     const matchesSearch = appliedSearch === '' || 
-      o.customer_name.toLowerCase().includes(appliedSearch.toLowerCase()) ||
-      o.order_id.toLowerCase().includes(appliedSearch.toLowerCase()) || 
-      o.event_type.toLowerCase().includes(appliedSearch.toLowerCase()) ||
-      o.event_location.toLowerCase().includes(appliedSearch.toLowerCase());
+      l.customer_name.toLowerCase().includes(appliedSearch.toLowerCase()) ||
+      l.lead_id.toLowerCase().includes(appliedSearch.toLowerCase()) || 
+      l.event_type.toLowerCase().includes(appliedSearch.toLowerCase()) ||
+      (l.event_location || '').toLowerCase().includes(appliedSearch.toLowerCase());
     
-    const matchesStart = appliedStartDate === '' || o.event_date >= appliedStartDate;
-    const matchesEnd = appliedEndDate === '' || o.event_date <= appliedEndDate;
+    const matchesStart = appliedStartDate === '' || l.event_date >= appliedStartDate;
+    const matchesEnd = appliedEndDate === '' || l.event_date <= appliedEndDate;
     
-    return matchesSearch && matchesStart && matchesEnd && o.current_stage !== 'Closed';
+    // Must be in active operational stages
+    const isOperational = !['New Lead', 'Follow Up', 'Follow-Up', 'Quotation Sent', 'Negotiation', 'Lost Lead', 'Lost', 'Cancelled'].includes(l.status);
+    
+    return matchesSearch && matchesStart && matchesEnd && isOperational && l.status !== 'Closed';
+  }).map(l => {
+    const o = orders.find(ord => ord.lead_id === l.lead_id);
+    return {
+      order_id: o?.order_id || l.lead_id,
+      lead_id: l.lead_id,
+      customer_name: l.customer_name,
+      mobile: l.mobile,
+      event_type: l.event_type,
+      event_date: l.event_date,
+      event_time: l.event_time,
+      event_location: l.event_location,
+      package_name: o?.package_name || 'Standard Package',
+      quotation_amount: l.final_amount || l.budget || 0,
+      advance_received: l.received_amount || 0,
+      balance_amount: Math.max(0, (l.final_amount || l.budget || 0) - (l.received_amount || 0)),
+      order_status: l.status === 'Closed' ? 'Completed' : 'Active',
+      current_stage: l.status,
+      sales_person: l.sales_person,
+      created_at: l.created_at || l.created_date || new Date().toISOString()
+    } as any;
   });
 
   // Filter staff according to any filters if needed, but standard directory uses real-time state

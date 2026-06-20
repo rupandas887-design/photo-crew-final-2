@@ -26,7 +26,8 @@ export const OperationsLeads: React.FC = () => {
     payments,
     equipmentHandovers,
     addEquipmentHandovers,
-    isDepartmentAllowedToEdit
+    isDepartmentAllowedToEdit,
+    leads
   } = useRole();
 
 
@@ -69,7 +70,7 @@ export const OperationsLeads: React.FC = () => {
 
   // Dual Dropdown and Multi-Staff Assign State
   const [activeAssignments, setActiveAssignments] = useState<{ staff_role: string; staff_id: string; staff_name: string }[]>([]);
-  const [selectedRole, setSelectedRole] = useState('Lead Photographer');
+  const [selectedRole, setSelectedRole] = useState('');
   const [selectedStaff, setSelectedStaff] = useState('');
 
   // Modals / Selection states
@@ -88,13 +89,13 @@ export const OperationsLeads: React.FC = () => {
     drone_operator_assigned: '',
     assistant_assigned: '',
     equipment_kit: '',
-    reporting_time: '08:00',
+    reporting_time: '',
     remarks: '',
     event_status: 'Assigned' as 'Assigned' | 'Completed' | 'Event Scheduled' | 'Event Completed' | 'Raw Footage Received' | string,
     current_stage: 'Order Confirmed' as CurrentStage,
     raw_footage_link: '',
     event_date: '',
-    event_time: '10:00'
+    event_time: ''
   });
 
   // State for completing shoot
@@ -114,7 +115,7 @@ export const OperationsLeads: React.FC = () => {
   const [receivingFootageOrderId, setReceivingFootageOrderId] = useState<string | null>(null);
   const [footageForm, setFootageForm] = useState({
     footage_link: '',
-    storage_type: 'Google Drive',
+    storage_type: '',
     upload_notes: ''
   });
   const [hardDiskReceived, setHardDiskReceived] = useState(false);
@@ -337,7 +338,7 @@ export const OperationsLeads: React.FC = () => {
     setIsEquipmentDropdownOpen(false);
     
     // Default selected values
-    setSelectedRole('Lead Photographer');
+    setSelectedRole('');
     setSelectedStaff('');
   };
 
@@ -401,10 +402,10 @@ export const OperationsLeads: React.FC = () => {
 
       // Assign operations includes event_status and raw footage link if updated
       await assignOperations(assigningOrderId, {
-        photographer_assigned: photographer || assignForm.photographer_assigned || 'Ramesh Kumar',
-        videographer_assigned: videographer || assignForm.videographer_assigned || 'Rahul Verma',
-        drone_operator_assigned: droneOp || assignForm.drone_operator_assigned,
-        assistant_assigned: assistant || assignForm.assistant_assigned,
+        photographer_assigned: photographer || assignForm.photographer_assigned || '',
+        videographer_assigned: videographer || assignForm.videographer_assigned || '',
+        drone_operator_assigned: droneOp || assignForm.drone_operator_assigned || '',
+        assistant_assigned: assistant || assignForm.assistant_assigned || '',
         equipment_kit: assignForm.equipment_kit,
         reporting_time: convertTimeToDbFormat(assignForm.reporting_time),
         remarks: assignForm.remarks,
@@ -425,12 +426,33 @@ export const OperationsLeads: React.FC = () => {
         });
       }
 
-      setAssigningOrderId(null);
+      closeAssignModal();
       alert("Assignment saved successfully!");
     } catch (e: any) {
       console.error("Failed to save assignment:", e);
       alert("Unable to save assignment. Error: " + (e.message || "Please try again."));
     }
+  };
+
+  const closeAssignModal = () => {
+    setAssigningOrderId(null);
+    setAssignForm({
+      photographer_assigned: '',
+      videographer_assigned: '',
+      drone_operator_assigned: '',
+      assistant_assigned: '',
+      equipment_kit: '',
+      reporting_time: '',
+      remarks: '',
+      event_status: 'Assigned',
+      current_stage: 'Order Confirmed',
+      raw_footage_link: '',
+      event_date: '',
+      event_time: ''
+    });
+    setActiveAssignments([]);
+    setSelectedRole('');
+    setSelectedStaff('');
   };
 
   const getStaffForRole = (role: string) => {
@@ -505,12 +527,16 @@ export const OperationsLeads: React.FC = () => {
     setHandoverStates(initialHandovers);
   };
 
-  const handleConfirmCompletion = () => {
+  const handleConfirmCompletion = async () => {
     if (!closingOrderId) return;
 
-    markEventCompleted(closingOrderId, serverPath);
-    setClosingOrderId(null);
-    alert(`Shoot marked completed for [${closingOrderId}]!`);
+    try {
+      await markEventCompleted(closingOrderId, serverPath);
+      setClosingOrderId(null);
+      alert(`Shoot marked completed for [${closingOrderId}] in Supabase and UI refreshed!`);
+    } catch (error) {
+      alert(`Failed to mark shoot completed: ${error}`);
+    }
   };
 
   const stats = useMemo(() => {
@@ -682,9 +708,13 @@ export const OperationsLeads: React.FC = () => {
                         <div className="flex items-center justify-end gap-2">
                           {ord.current_stage === 'Order Confirmed' && (
                             <button
-                              onClick={() => {
-                                updateOrderStage(ord.order_id, 'New Order Received');
-                                alert(`Order ${ord.order_id} Acknowledged & marked as "New Order Received".`);
+                              onClick={async () => {
+                                try {
+                                  await updateOrderStage(ord.order_id, 'New Order Received');
+                                  alert(`Order ${ord.order_id} Acknowledged & marked as "New Order Received" in Supabase!`);
+                                } catch (error) {
+                                  alert(`Failed to acknowledge order: ${error}`);
+                                }
                               }}
                               className="px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold rounded cursor-pointer transition-all uppercase"
                             >
@@ -817,8 +847,8 @@ export const OperationsLeads: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-850/60 text-xs">
-            {sortedOrders.filter(o => o.current_stage !== 'Order Confirmed' && o.current_stage !== 'New Order Received').length > 0 ? (
-              sortedOrders.filter(o => o.current_stage !== 'Order Confirmed' && o.current_stage !== 'New Order Received').map((ord) => {
+            {sortedOrders.filter(o => o.current_stage !== 'Order Confirmed' && o.current_stage !== 'New Order Received' && o.current_stage !== 'Raw Footage Received').length > 0 ? (
+              sortedOrders.filter(o => o.current_stage !== 'Order Confirmed' && o.current_stage !== 'New Order Received' && o.current_stage !== 'Raw Footage Received').map((ord) => {
                 const op = getOpDetails(ord.order_id);
                 const orderAssignments = staffAssignments ? staffAssignments.filter(sa => sa.order_id === ord.order_id) : [];
 
@@ -829,7 +859,7 @@ export const OperationsLeads: React.FC = () => {
                   op?.drone_operator_assigned,
                   op?.assistant_assigned,
                   ...orderAssignments.map(a => `${a.staff_name} (${a.staff_role})`)
-                ].filter(Boolean);
+                ].filter(name => name && name !== 'Unassigned' && name !== 'unassigned' && name !== 'None' && name !== '');
 
                 const currentStage = ord.current_stage || 'Order Confirmed';
                 const canEdit = (currentRole === 'Business Owner' || currentRole === 'Operations Team');
@@ -872,7 +902,7 @@ export const OperationsLeads: React.FC = () => {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-zinc-650 italic">Not Assigned</span>
+                        <span className="text-zinc-650 italic">Unassigned</span>
                       )}
                     </td>
                     <td className="p-4">
@@ -907,13 +937,15 @@ export const OperationsLeads: React.FC = () => {
                               if (newStatus === 'Event Completed') {
                                 try {
                                   await markEventCompleted(ord.order_id, '');
+                                  alert(`Order ${ord.order_id} has been marked as Event Completed in Supabase and UI has been refreshed!`);
                                 } catch (error) {
-                                  alert(`Failed to update status: ${error}`);
+                                  alert(`Failed to update status to Event Completed: ${error}`);
                                 }
                               } else if (newStatus === 'Event Cancelled') {
                                 if (confirm(`Are you sure you want to cancel the event for ${ord.customer_name}?`)) {
                                   try {
                                     await updateOrderStage(ord.order_id, 'Event Cancelled');
+                                    alert(`Order ${ord.order_id} has been cancelled in Supabase.`);
                                   } catch (error) {
                                     alert(`Failed to cancel event: ${error}`);
                                   }
@@ -922,8 +954,8 @@ export const OperationsLeads: React.FC = () => {
                                 setReceivingFootageOrderId(ord.order_id);
                                 const existingRf = rawFootage?.find(f => f.order_id === ord.order_id);
                                 setFootageForm({
-                                  footage_link: existingRf?.server_path || `https://drive.google.com/drive/folders/PC-${ord.order_id}-footage`,
-                                  storage_type: 'Google Drive',
+                                  footage_link: existingRf?.server_path || '',
+                                  storage_type: existingRf?.storage_type || '',
                                   upload_notes: ''
                                 });
                                 // Initialize footageHandoverStates for each assigned equipment item
@@ -932,7 +964,7 @@ export const OperationsLeads: React.FC = () => {
                                 const initialHandovers: any = {};
                                 kits.forEach((k: string) => {
                                   initialHandovers[k] = {
-                                    return_status: 'Returned',
+                                    return_status: '',
                                     returned_by: currentUserName,
                                     return_date: new Date().toISOString().split('T')[0],
                                     notes: ''
@@ -952,6 +984,12 @@ export const OperationsLeads: React.FC = () => {
                               <option value="Raw Footage Received">Raw Footage Received</option>
                             )}
                           </select>
+                        )}
+
+                        {currentStage === 'Raw Footage Received' && (
+                          <span className="px-2.5 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-full text-[10px] font-mono font-bold select-none uppercase">
+                            Moved To Production (Read Only)
+                          </span>
                         )}
 
                         {/* WhatsApp Staff: visible when assignment exists */}
@@ -998,8 +1036,8 @@ export const OperationsLeads: React.FC = () => {
                               setReceivingFootageOrderId(ord.order_id);
                               const existingRf = rawFootage?.find(f => f.order_id === ord.order_id);
                               setFootageForm({
-                                footage_link: existingRf?.server_path || `https://drive.google.com/drive/folders/PC-${ord.order_id}-footage`,
-                                storage_type: 'Google Drive',
+                                footage_link: existingRf?.server_path || '',
+                                storage_type: existingRf?.storage_type || '',
                                 upload_notes: ''
                               });
 
@@ -1007,14 +1045,14 @@ export const OperationsLeads: React.FC = () => {
                               const op = getOpDetails(ord.order_id);
                               const kits = op?.equipment_kit ? op.equipment_kit.split(',').map((sName: string) => sName.trim()).filter(Boolean) : [];
                               const initialHandovers: Record<string, {
-                                return_status: 'Returned' | 'Not Returned' | 'Damaged' | 'Missing';
+                                return_status: 'Returned' | 'Not Returned' | 'Damaged' | 'Missing' | '';
                                 returned_by: string;
                                 return_date: string;
                                 notes: string;
                               }> = {};
                               kits.forEach((k: string) => {
                                 initialHandovers[k] = {
-                                  return_status: 'Returned',
+                                  return_status: '',
                                   returned_by: currentUserName || 'Operations Team',
                                   return_date: new Date().toISOString().split('T')[0],
                                   notes: ''
@@ -1122,7 +1160,7 @@ export const OperationsLeads: React.FC = () => {
                 <span>Assign operations allocation ~ {assigningOrderId}</span>
               </h3>
               <button 
-                onClick={() => setAssigningOrderId(null)}
+                onClick={closeAssignModal}
                 className="text-zinc-500 hover:text-white font-bold cursor-pointer"
               >
                 ✕
@@ -1144,16 +1182,11 @@ export const OperationsLeads: React.FC = () => {
                         onChange={(e) => {
                           const role = e.target.value;
                           setSelectedRole(role);
-                          // select first available staff member as default
-                          const available = getStaffForRole(role);
-                          if (available.length > 0) {
-                            setSelectedStaff(available[0].name);
-                          } else {
-                            setSelectedStaff('');
-                          }
+                          setSelectedStaff(''); // Always start member selection clean
                         }}
                         className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-100"
                       >
+                        <option value="">-- Choose Role --</option>
                         <option value="Lead Photographer">Lead Photographer</option>
                         <option value="Associate Photographer">Associate Photographer</option>
                         <option value="Lead Videographer">Lead Videographer</option>
@@ -1178,6 +1211,10 @@ export const OperationsLeads: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
+                        if (!selectedRole) {
+                          alert('Please select a staff role first.');
+                          return;
+                        }
                         if (!selectedStaff) {
                           alert('Please select a staff member first.');
                           return;
@@ -1458,7 +1495,7 @@ export const OperationsLeads: React.FC = () => {
               <div className="flex justify-end gap-2 border-t border-zinc-800 pt-3">
                 <button
                   type="button"
-                  onClick={() => setAssigningOrderId(null)}
+                  onClick={closeAssignModal}
                   className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded-xl cursor-pointer"
                 >
                   Cancel
@@ -1773,6 +1810,21 @@ Please report on time and update status through the portal.`;
             <form onSubmit={async (e) => {
               e.preventDefault();
               
+              if (!footageForm.footage_link || !footageForm.footage_link.trim()) {
+                alert('Please enter a valid Raw Footage Drive Link.');
+                return;
+              }
+              if (!footageForm.storage_type) {
+                alert('Please select a Storage Type.');
+                return;
+              }
+
+              const unselectedKits = (Object.entries(footageHandoverStates) as [string, any][]).filter(([_, details]) => !details.return_status);
+              if (unselectedKits.length > 0) {
+                alert('Please select a return status for all equipment kits.');
+                return;
+              }
+              
               // Save equipment handovers/verifications to Supabase & state
               const handoversToSave = (Object.entries(footageHandoverStates) as [string, any][]).map(([equipName, details]) => ({
                 order_id: receivingFootageOrderId,
@@ -1796,19 +1848,23 @@ Please report on time and update status through the portal.`;
                 footageForm.upload_notes ? `Notes: ${footageForm.upload_notes}` : null
               ].filter(Boolean).join(' | ');
 
-              confirmRawFootageReceived(
-                receivingFootageOrderId,
-                footageForm.footage_link,
-                footageForm.storage_type,
-                compositeNotes,
-                paymentCollectionStatus,
-                additionalReceived
-              );
-              
-              setReceivingFootageOrderId(null);
-              setFootageForm({ footage_link: '', storage_type: 'Google Drive', upload_notes: '' });
-              setHardDiskReceived(false);
-              setMemoryCardReceived(false);
+              try {
+                await confirmRawFootageReceived(
+                  receivingFootageOrderId,
+                  footageForm.footage_link,
+                  footageForm.storage_type,
+                  compositeNotes,
+                  paymentCollectionStatus,
+                  additionalReceived
+                );
+                alert("Raw Footage Received has been successfully saved to Supabase! Lead has now moved to the Production Dashboard.");
+                setReceivingFootageOrderId(null);
+                setFootageForm({ footage_link: '', storage_type: '', upload_notes: '' });
+                setHardDiskReceived(false);
+                setMemoryCardReceived(false);
+              } catch (error) {
+                alert(`Failed to save raw footage info: ${error}`);
+              }
             }} className="space-y-4 text-left">
               <div>
                 <label className="block text-[10px] font-bold text-zinc-400 uppercase font-mono mb-1">
@@ -1862,6 +1918,7 @@ Please report on time and update status through the portal.`;
                   onChange={(e) => setFootageForm({ ...footageForm, storage_type: e.target.value })}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100"
                 >
+                  <option value="">-- Choose Storage Type --</option>
                   <option value="Google Drive">Google Drive</option>
                   <option value="Dropbox">Dropbox</option>
                   <option value="OneDrive">OneDrive</option>

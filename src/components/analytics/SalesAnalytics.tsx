@@ -45,19 +45,30 @@ export const SalesAnalytics: React.FC = () => {
   const followUpPendingCount = filteredLeads.filter(l => l.status === 'Follow Up' || l.status === 'Follow-Up' || l.status === 'Follow-up Pending').length;
   const quotationSentCount = filteredLeads.filter(l => l.status === 'Quotation Sent').length;
   const negotiationCount = filteredLeads.filter(l => l.status === 'Negotiation').length;
-  const orderConfirmedCount = filteredLeads.filter(l => l.status === 'Order Confirmed' || l.status === 'Approved').length;
+  
+  // COUNT(leads where current_status = 'Order Confirmed')
+  const orderConfirmedCount = filteredLeads.filter(l => l.status === 'Order Confirmed').length;
+  
   const lostLeadsCount = filteredLeads.filter(l => l.status === 'Lost Lead' || l.status === 'Cancelled' || l.status === 'Lost').length;
   
+  // (Order Confirmed ÷ Total Leads) × 100
   const conversionRateFloat = totalLeadsCount > 0 
     ? parseFloat(((orderConfirmedCount / totalLeadsCount) * 100).toFixed(1))
     : 0;
 
-  const totalEventValue = filteredLeads
-    .filter(l => l.status === 'Order Confirmed' || l.status === 'Approved')
-    .reduce((sum, l) => sum + (l.budget || 0), 0);
+  // SUM(received_amount)
+  const paymentReceivedSum = filteredLeads.reduce((sum, l) => sum + (l.received_amount || 0), 0);
 
+  // SUM(final_amount - received_amount)
+  const paymentPendingSum = filteredLeads.reduce((sum, l) => {
+    const final = l.final_amount || l.budget || 0;
+    const received = l.received_amount || 0;
+    return sum + Math.max(0, final - received);
+  }, 0);
+
+  const totalEventValue = paymentReceivedSum;
   const upcomingEventsCount = filteredLeads
-    .filter(l => (l.status === 'Order Confirmed' || l.status === 'Approved') && l.event_date >= TODAY_REF)
+    .filter(l => l.status === 'Order Confirmed' && l.event_date >= TODAY_REF)
     .length;
 
   const salesTeam = staff.filter(s => s.role === 'Sales Team');
@@ -245,26 +256,28 @@ export const SalesAnalytics: React.FC = () => {
         />
 
         <CameraLensStatsCard
-          label="Total Event Value"
-          val={totalEventValue}
+          label="Payment Received"
+          val={paymentReceivedSum}
           isCurrency={true}
           currencyFormatter={formatINR}
           theme="gold"
-          trendText="Pipeline Locked"
+          trendText="Cash Realized"
           subText="AF Capital"
           chartPoints={[20, 35, 28, 45, 52, 60, 75]}
-          onClick={() => setSelectedCard('Total Event Value')}
+          onClick={() => setSelectedCard('Payment Received')}
           lensLabel="CINE 35mm"
         />
 
         <CameraLensStatsCard
-          label="Upcoming Events"
-          val={upcomingEventsCount}
+          label="Payment Pending"
+          val={paymentPendingSum}
+          isCurrency={true}
+          currencyFormatter={formatINR}
           theme="blue"
-          trendText="Production Backlog"
-          subText="AF Schedule"
+          trendText="Outstanding Arrears"
+          subText="AF Debt"
           chartPoints={[2, 5, 4, 6, 8, 7, 11]}
-          onClick={() => setSelectedCard('Upcoming Events')}
+          onClick={() => setSelectedCard('Payment Pending')}
           lensLabel="PRIME 85mm"
         />
 
