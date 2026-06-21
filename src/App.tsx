@@ -64,15 +64,7 @@ const MainAppContent: React.FC = () => {
 
   const isTabAllowed = (tab: string): boolean => {
     if (currentRole === 'Business Owner') {
-      return [
-        'owner_revenue',
-        'owner_sales',
-        'owner_operations',
-        'owner_production',
-        'owner_calendar',
-        'notifications',
-        'dashboard' // leaving it returning true just in case
-      ].includes(tab);
+      return true;
     }
 
     if (currentRole === 'Sales Team') {

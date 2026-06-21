@@ -4636,7 +4636,30 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
       {selectedLeadProd && (() => {
         const rf = rawFootage.find(f => f.tracking_id === selectedLeadProd.tracking_id);
         const order = rf ? orders.find(o => o.order_id === rf.order_id) : null;
-        if (!order) return null;
+        if (!order) {
+          return (
+            <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 z-50">
+              <div className="bg-zinc-950 border border-zinc-900 rounded-2xl w-full max-w-md p-6 shadow-2xl relative space-y-4">
+                <div className="flex items-center gap-2 text-rose-500">
+                  <span className="text-rose-500 text-lg">⚠️</span>
+                  <h2 className="text-sm font-mono uppercase tracking-widest font-bold">Dossier Record Pending</h2>
+                </div>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  No matching client order was found for Production ID: <strong className="text-zinc-200">{selectedLeadProd.production_id}</strong> (Tracking ID: {selectedLeadProd.tracking_id || 'Unknown'}).
+                </p>
+                <div className="flex justify-end pt-2">
+                  <button 
+                    type="button"
+                    onClick={() => setSelectedLeadProd(null)}
+                    className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-mono text-xs rounded-xl transition-all font-bold cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        }
 
         // Load payments info
         const payment = payments.find(p => p.order_id === order.order_id);

@@ -41,7 +41,29 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ isOpen, 
 
   // Single Record Lookup Strategy
   const order = orders.find((o) => o.order_id === orderId);
-  if (!order) return null;
+  if (!order) {
+    return (
+      <div id="project_detail_master_modal" className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative space-y-4">
+          <div className="flex items-center gap-2 text-rose-500">
+            <AlertCircle className="w-5 h-5 text-rose-500" />
+            <h2 className="text-sm font-mono uppercase tracking-widest font-bold">Record Not Found</h2>
+          </div>
+          <p className="text-xs text-zinc-400 leading-relaxed">
+            The tracking and package ledger details for Order ID: <strong className="text-zinc-200">{orderId}</strong> could not be resolved in the database.
+          </p>
+          <div className="flex justify-end pt-2">
+            <button 
+              onClick={onClose}
+              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-mono text-xs rounded-xl transition-all font-bold cursor-pointer"
+            >
+              Close Dossier
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const lead = leads.find((l) => l.lead_id === order.lead_id);
   const operation = operations.find((op) => op.order_id === orderId);

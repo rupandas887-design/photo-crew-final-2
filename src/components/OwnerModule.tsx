@@ -11,6 +11,13 @@ import { BusinessOwnerCalendar } from './BusinessOwnerCalendar';
 
 // --- SHARED UI COMPONENTS ---
 
+export const cleanStaffName = (name: string | undefined | null) => {
+  if (!name || name.trim() === '' || name === 'None') return 'Unassigned';
+  let clean = name.replace(/Unassigned[,+&\s]*/gi, '').replace(/[,+&\s]*Unassigned/gi, '').trim();
+  if (clean.replace(/[,+&\s]+/g, '') === '') return 'Unassigned';
+  return clean.replace(/^[,\s]+|[,\s]+$/g, '');
+};
+
 const AnalyticsCard = ({ title, value, icon: Icon, onClick, className = '' }: any) => (
   <div 
     onClick={onClick}
@@ -227,24 +234,30 @@ export const OwnerRevenueAnalytics = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/50 text-zinc-300 font-sans">
-                {filteredOrders.map(o => {
-                  const py = payments.find(p => p.order_id === o.order_id);
-                  const pAmt = o.quotation_amount || 0;
-                  const recv = py ? (py.advance_received + py.final_payment_received) : 0;
-                  const pend = py ? py.balance_due : 0;
-                  return (
-                    <tr key={o.order_id} className="hover:bg-zinc-900/40">
-                      <td className="py-3 pr-4 font-mono text-[10px] text-amber-500">{o.order_id}</td>
-                      <td className="py-3 pr-4 font-bold">{o.customer_name}</td>
-                      <td className="py-3 pr-4 text-right font-mono font-bold text-white">{formatINR(pAmt)}</td>
-                      <td className="py-3 pr-4 text-right font-mono text-emerald-400">{formatINR(recv)}</td>
-                      <td className="py-3 pr-4 text-right font-mono text-rose-400">{formatINR(pend)}</td>
-                      <td className="py-3 font-mono text-[9px] uppercase tracking-wider">
-                        <span className="px-2 py-1 rounded-md bg-zinc-800">{o.current_stage}</span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filteredOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-zinc-500 font-mono font-bold">No records found</td>
+                  </tr>
+                ) : (
+                  filteredOrders.map(o => {
+                    const py = payments.find(p => p.order_id === o.order_id);
+                    const pAmt = o.quotation_amount || 0;
+                    const recv = py ? (py.advance_received + py.final_payment_received) : 0;
+                    const pend = py ? py.balance_due : 0;
+                    return (
+                      <tr key={o.order_id} className="hover:bg-zinc-900/40">
+                        <td className="py-3 pr-4 font-mono text-[10px] text-amber-500">{o.order_id}</td>
+                        <td className="py-3 pr-4 font-bold">{o.customer_name}</td>
+                        <td className="py-3 pr-4 text-right font-mono font-bold text-white">{formatINR(pAmt)}</td>
+                        <td className="py-3 pr-4 text-right font-mono text-emerald-400">{formatINR(recv)}</td>
+                        <td className="py-3 pr-4 text-right font-mono text-rose-400">{formatINR(pend)}</td>
+                        <td className="py-3 font-mono text-[9px] uppercase tracking-wider">
+                          <span className="px-2 py-1 rounded-md bg-zinc-800">{o.current_stage}</span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -261,16 +274,10 @@ export const OwnerSalesPerformance = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showTable, setShowTable] = useState(false);
+  const [activeCard, setActiveCard] = useState<string>('Total Leads');
 
   const filteredLeads = useMemo(() => leads.filter(l => (!startDate || l.created_date >= startDate) && (!endDate || l.created_date <= endDate)), [leads, startDate, endDate]);
   const filteredOrders = useMemo(() => orders.filter(o => (!startDate || o.event_date >= startDate) && (!endDate || o.event_date <= endDate)), [orders, startDate, endDate]);
-
-  const cleanStaffName = (name: string | undefined | null) => {
-    if (!name || name.trim() === '' || name === 'None') return 'Unassigned';
-    let clean = name.replace(/Unassigned[,+&\s]*/gi, '').replace(/[,+&\s]*Unassigned/gi, '').trim();
-    if (clean.replace(/[,+&\s]+/g, '') === '') return 'Unassigned';
-    return clean.replace(/^[,\s]+|[,\s]+$/g, '');
-  };
 
   const metrics = useMemo(() => {
     const totalLeads = filteredLeads.length;
@@ -315,13 +322,104 @@ export const OwnerSalesPerformance = () => {
       <SectionHeader title="Sales Performance" icon={TrendingUp} onDownload={downloadCSV} start={startDate} setStart={setStartDate} end={endDate} setEnd={setEndDate} />
       
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <AnalyticsCard title="Total Leads" value={metrics.totalLeads} icon={FileText} onClick={() => setShowTable(true)} className="lg:col-span-1" />
-        <AnalyticsCard title="Quoted" value={metrics.quotationSent} icon={FileText} onClick={() => setShowTable(true)} className="lg:col-span-1" />
-        <AnalyticsCard title="Confirmed" value={metrics.orderConfirmed} icon={CheckCircle} onClick={() => setShowTable(true)} className="lg:col-span-1 border-emerald-500/20" />
-        <AnalyticsCard title="Conv. Rate" value={`${metrics.conversionRate.toFixed(1)}%`} icon={TrendingUp} onClick={() => setShowTable(true)} className="lg:col-span-1 border-indigo-500/20" />
-        <AnalyticsCard title="Follow-up Pending" value={metrics.followUps} icon={Clock} onClick={() => setShowTable(true)} className="lg:col-span-1 border-rose-500/20" />
-        <AnalyticsCard title="Generated Rev" value={formatINR(metrics.revenueGen)} icon={Landmark} onClick={() => setShowTable(true)} className="lg:col-span-1 border-amber-500/20" />
+        <AnalyticsCard title="Total Leads" value={metrics.totalLeads} icon={FileText} onClick={() => { setActiveCard('Total Leads'); setShowTable(true); }} className="lg:col-span-1" />
+        <AnalyticsCard title="Quoted" value={metrics.quotationSent} icon={FileText} onClick={() => { setActiveCard('Quoted'); setShowTable(true); }} className="lg:col-span-1" />
+        <AnalyticsCard title="Confirmed" value={metrics.orderConfirmed} icon={CheckCircle} onClick={() => { setActiveCard('Confirmed'); setShowTable(true); }} className="lg:col-span-1 border-emerald-500/20" />
+        <AnalyticsCard title="Conv. Rate" value={`${metrics.conversionRate.toFixed(1)}%`} icon={TrendingUp} onClick={() => { setActiveCard('Conv. Rate'); setShowTable(true); }} className="lg:col-span-1 border-indigo-500/20" />
+        <AnalyticsCard title="Follow-up Pending" value={metrics.followUps} icon={Clock} onClick={() => { setActiveCard('Follow-up Pending'); setShowTable(true); }} className="lg:col-span-1 border-rose-500/20" />
+        <AnalyticsCard title="Generated Rev" value={formatINR(metrics.revenueGen)} icon={Landmark} onClick={() => { setActiveCard('Generated Rev'); setShowTable(true); }} className="lg:col-span-1 border-amber-500/20" />
       </div>
+
+      {showTable && (
+        <div id="detailed_sales_table_block" className="bg-zinc-950/80 border border-zinc-800 rounded-2xl overflow-hidden mt-6 animate-in fade-in slide-in-from-bottom-4">
+          <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-zinc-300">
+              Detailed Sales Records - {activeCard}
+            </h3>
+            <button onClick={() => setShowTable(false)} className="text-zinc-500 hover:text-white font-bold p-1 px-2 rounded bg-zinc-900 border border-zinc-800 transition-colors uppercase font-mono text-[10px]">✕ Close</button>
+          </div>
+          <div className="overflow-x-auto p-4">
+            {['Total Leads', 'Quoted', 'Follow-up Pending', 'Conv. Rate'].includes(activeCard) ? (
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-zinc-800 text-zinc-500 font-mono">
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Lead ID</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Customer</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Mobile</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Status</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Created Date</th>
+                    <th className="pb-3 uppercase tracking-wider font-semibold">Sales Person</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/50 text-zinc-300 font-sans">
+                  {(() => {
+                    let list = filteredLeads;
+                    if (activeCard === 'Quoted') {
+                      list = filteredLeads.filter(l => ['Quotation Sent', 'Negotiation', 'Order Confirmed', 'Closed'].includes(l.current_status || l.status));
+                    } else if (activeCard === 'Follow-up Pending') {
+                      list = filteredLeads.filter(l => (l.current_status || l.status) === 'Follow Up');
+                    }
+                    if (list.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-zinc-500 font-mono font-bold">No records found</td>
+                        </tr>
+                      );
+                    }
+                    return list.map(l => (
+                      <tr key={l.lead_id} className="hover:bg-zinc-900/40">
+                        <td className="py-3 pr-4 font-mono text-[10px] text-amber-500">{l.lead_id}</td>
+                        <td className="py-3 pr-4 font-bold text-white">{l.customer_name}</td>
+                        <td className="py-3 pr-4 font-mono">{l.mobile || 'N/A'}</td>
+                        <td className="py-3 pr-4 font-mono text-[9px] uppercase tracking-wider">
+                          <span className="px-2 py-0.5 rounded bg-zinc-850 text-zinc-300">{l.current_status || l.status}</span>
+                        </td>
+                        <td className="py-3 pr-4 font-mono">{l.created_date}</td>
+                        <td className="py-3 font-semibold text-zinc-400">{cleanStaffName(l.sales_person)}</td>
+                      </tr>
+                    ));
+                  })()}
+                </tbody>
+              </table>
+            ) : (
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-zinc-800 text-zinc-500 font-mono">
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Order ID</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Customer</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Package Name</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Event Date</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Sales Person</th>
+                    <th className="pb-3 uppercase tracking-wider font-semibold text-right">Quotation Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/50 text-zinc-300 font-sans">
+                  {(() => {
+                    const list = filteredOrders;
+                    if (list.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-zinc-500 font-mono font-bold">No records found</td>
+                        </tr>
+                      );
+                    }
+                    return list.map(o => (
+                      <tr key={o.order_id} className="hover:bg-zinc-900/40">
+                        <td className="py-3 pr-4 font-mono text-[10px] text-amber-500">{o.order_id}</td>
+                        <td className="py-3 pr-4 font-bold text-white">{o.customer_name}</td>
+                        <td className="py-3 pr-4 font-mono text-amber-400 font-bold">{o.package_name || 'General Shoot'}</td>
+                        <td className="py-3 pr-4 font-mono">{o.event_date}</td>
+                        <td className="py-3 pr-4 font-semibold text-zinc-400">{cleanStaffName(o.sales_person)}</td>
+                        <td className="py-3 text-right font-mono font-bold text-emerald-400">{formatINR(o.quotation_amount || 0)}</td>
+                      </tr>
+                    ));
+                  })()}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden mt-6 shadow-xl">
         <div className="p-5 border-b border-zinc-800 bg-zinc-900/30">
@@ -349,7 +447,7 @@ export const OwnerSalesPerformance = () => {
                 </tr>
               ))}
               {metrics.staffPerformance.length === 0 && (
-                <tr><td colSpan={5} className="py-4 text-center font-mono text-zinc-500">No staff data found.</td></tr>
+                <tr><td colSpan={5} className="py-4 text-center font-mono text-zinc-505 font-bold">No staff data found.</td></tr>
               )}
             </tbody>
           </table>
@@ -366,6 +464,7 @@ export const OwnerOperationsPerformance = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showTable, setShowTable] = useState(false);
+  const [activeCard, setActiveCard] = useState<string>('Total Orders');
 
   const filteredOrders = useMemo(() => orders.filter(o => (!startDate || o.event_date >= startDate) && (!endDate || o.event_date <= endDate)), [orders, startDate, endDate]);
 
@@ -413,13 +512,113 @@ export const OwnerOperationsPerformance = () => {
       <SectionHeader title="Operations Performance" icon={Target} onDownload={downloadCSV} start={startDate} setStart={setStartDate} end={endDate} setEnd={setEndDate} />
       
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <AnalyticsCard title="Total Orders" value={metrics.totalOrders} icon={FileText} className="lg:col-span-1 border-blue-500/20" />
-        <AnalyticsCard title="Staff Assigned" value={metrics.totalAssignments} icon={Target} className="lg:col-span-1" />
-        <AnalyticsCard title="Scheduled" value={metrics.scheduledEvents} icon={Clock} className="lg:col-span-1 border-indigo-500/20" />
-        <AnalyticsCard title="Completed" value={metrics.completedEvents} icon={CheckCircle} className="lg:col-span-1 border-emerald-500/20" />
-        <AnalyticsCard title="Raw Rcvd" value={metrics.rawEvents} icon={Video} className="lg:col-span-1 border-amber-500/20" />
-        <AnalyticsCard title="Cancelled" value={metrics.cancelledEvents} icon={AlertCircle} className="lg:col-span-1 border-rose-500/20" />
+        <AnalyticsCard title="Total Orders" value={metrics.totalOrders} icon={FileText} onClick={() => { setActiveCard('Total Orders'); setShowTable(true); }} className="lg:col-span-1 border-blue-500/20" />
+        <AnalyticsCard title="Staff Assigned" value={metrics.totalAssignments} icon={Target} onClick={() => { setActiveCard('Staff Assigned'); setShowTable(true); }} className="lg:col-span-1" />
+        <AnalyticsCard title="Scheduled" value={metrics.scheduledEvents} icon={Clock} onClick={() => { setActiveCard('Scheduled'); setShowTable(true); }} className="lg:col-span-1 border-indigo-500/20" />
+        <AnalyticsCard title="Completed" value={metrics.completedEvents} icon={CheckCircle} onClick={() => { setActiveCard('Completed'); setShowTable(true); }} className="lg:col-span-1 border-emerald-500/20" />
+        <AnalyticsCard title="Raw Rcvd" value={metrics.rawEvents} icon={Video} onClick={() => { setActiveCard('Raw Rcvd'); setShowTable(true); }} className="lg:col-span-1 border-amber-500/20" />
+        <AnalyticsCard title="Cancelled" value={metrics.cancelledEvents} icon={AlertCircle} onClick={() => { setActiveCard('Cancelled'); setShowTable(true); }} className="lg:col-span-1 border-rose-500/20" />
       </div>
+
+      {showTable && (
+        <div id="detailed_ops_table_block" className="bg-zinc-950/80 border border-zinc-800 rounded-2xl overflow-hidden mt-6 animate-in fade-in slide-in-from-bottom-4">
+          <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-zinc-300">
+              Detailed Operations Records - {activeCard}
+            </h3>
+            <button onClick={() => setShowTable(false)} className="text-zinc-500 hover:text-white font-bold p-1 px-2 rounded bg-zinc-900 border border-zinc-800 transition-colors uppercase font-mono text-[10px]">✕ Close</button>
+          </div>
+          <div className="overflow-x-auto p-4">
+            {activeCard === 'Staff Assigned' ? (
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-zinc-800 text-zinc-500 font-mono">
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Operation ID</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Order ID</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Photographer</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Videographer</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Drone pilot</th>
+                    <th className="pb-3 uppercase tracking-wider font-semibold">Event Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/50 text-zinc-300 font-sans">
+                  {operations.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-zinc-500 font-mono font-bold">No records found</td>
+                    </tr>
+                  ) : (
+                    operations.map(op => (
+                      <tr key={op.operation_id} className="hover:bg-zinc-900/40">
+                        <td className="py-3 pr-4 font-mono text-[10px] text-amber-500">{op.operation_id}</td>
+                        <td className="py-3 pr-4 font-mono text-[10px] text-zinc-400 font-bold">{op.order_id}</td>
+                        <td className="py-3 pr-4 font-semibold text-white">{cleanStaffName(op.photographer_assigned)}</td>
+                        <td className="py-3 pr-4 font-semibold text-white">{cleanStaffName(op.videographer_assigned)}</td>
+                        <td className="py-3 pr-4 font-semibold text-white">{cleanStaffName(op.drone_operator_assigned)}</td>
+                        <td className="py-3 font-semibold font-mono text-[9px] uppercase">
+                          <span className="px-2 py-0.5 rounded bg-zinc-850 text-blue-400">{op.event_status || 'Scheduled'}</span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            ) : (
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-zinc-800 text-zinc-500 font-mono">
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Order ID</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Customer</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Event Date</th>
+                    <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Current Stage</th>
+                    <th className="pb-3 uppercase tracking-wider font-semibold">Crew Assignments</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/50 text-zinc-300 font-sans">
+                  {(() => {
+                    let list = filteredOrders;
+                    if (activeCard === 'Scheduled') {
+                      list = filteredOrders.filter(o => ['Event Scheduled', 'Operations Assigned'].includes(o.current_stage));
+                    } else if (activeCard === 'Completed') {
+                      list = filteredOrders.filter(o => ['Event Completed', 'Raw Footage Received', 'Closed'].includes(o.current_stage));
+                    } else if (activeCard === 'Raw Rcvd') {
+                      list = filteredOrders.filter(o => o.current_stage === 'Raw Footage Received');
+                    } else if (activeCard === 'Cancelled') {
+                      list = filteredOrders.filter(o => o.current_stage === 'Event Cancelled');
+                    }
+                    if (list.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={5} className="py-8 text-center text-zinc-500 font-mono font-bold">No records found</td>
+                        </tr>
+                      );
+                    }
+                    return list.map(o => {
+                      const op = operations.find(p => p.order_id === o.order_id);
+                      return (
+                        <tr key={o.order_id} className="hover:bg-zinc-900/40">
+                          <td className="py-3 pr-4 font-mono text-[10px] text-amber-500">{o.order_id}</td>
+                          <td className="py-3 pr-4 font-bold text-white">{o.customer_name}</td>
+                          <td className="py-3 pr-4 font-mono">{o.event_date}</td>
+                          <td className="py-3 pr-4 font-mono text-[9px] uppercase">
+                            <span className="px-2 py-0.5 rounded bg-zinc-850 text-indigo-400">{o.current_stage}</span>
+                          </td>
+                          <td className="py-3 font-semibold text-zinc-450 text-[10px]">
+                            {op ? (
+                              <span>P: {cleanStaffName(op.photographer_assigned)} | V: {cleanStaffName(op.videographer_assigned)} | D: {cleanStaffName(op.drone_operator_assigned)}</span>
+                            ) : (
+                              <span className="text-zinc-650 italic text-[10px]">No operational record</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
 
        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden mt-6 shadow-xl">
         <div className="p-5 border-b border-zinc-800 bg-zinc-900/30">
@@ -446,6 +645,9 @@ export const OwnerOperationsPerformance = () => {
                   <td className="py-3 text-right font-mono font-bold text-amber-500">{s.rate.toFixed(1)}%</td>
                 </tr>
               ))}
+              {metrics.staffStats.length === 0 && (
+                <tr><td colSpan={5} className="py-4 text-center font-mono text-zinc-505 font-bold">No operational staff found.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -461,6 +663,7 @@ export const OwnerProductionPerformance = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showTable, setShowTable] = useState(false);
+  const [activeCard, setActiveCard] = useState<string>('New Rcvd');
 
   const filteredProd = useMemo(() => production.filter(p => (!startDate || (p.editing_start_date || '') >= startDate) && (!endDate || (p.editing_start_date || '') <= endDate)), [production, startDate, endDate]);
 
@@ -516,14 +719,86 @@ export const OwnerProductionPerformance = () => {
       <SectionHeader title="Production Performance" icon={Video} onDownload={downloadCSV} start={startDate} setStart={setStartDate} end={endDate} setEnd={setEndDate} />
       
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
-        <AnalyticsCard title="New Rcvd" value={metrics.newProjects} icon={FileText} className="lg:col-span-1" />
-        <AnalyticsCard title="Assigned" value={metrics.editorAssigned} icon={Target} className="lg:col-span-1" />
-        <AnalyticsCard title="In Progress" value={metrics.editingInProgress} icon={Clock} className="lg:col-span-1 border-blue-500/20" />
-        <AnalyticsCard title="In Review" value={metrics.clientReview} icon={AlertCircle} className="lg:col-span-1 border-amber-500/20" />
-        <AnalyticsCard title="Approved" value={metrics.clientApproved} icon={CheckCircle} className="lg:col-span-1 border-emerald-500/20" />
-        <AnalyticsCard title="Delivered" value={metrics.projectDelivered} icon={Video} className="lg:col-span-1 border-indigo-500/20" />
-        <AnalyticsCard title="Closed" value={metrics.projectClosed} icon={CheckCircle} className="lg:col-span-1 border-zinc-500/20" />
+        <AnalyticsCard title="New Rcvd" value={metrics.newProjects} icon={FileText} onClick={() => { setActiveCard('New Rcvd'); setShowTable(true); }} className="lg:col-span-1" />
+        <AnalyticsCard title="Assigned" value={metrics.editorAssigned} icon={Target} onClick={() => { setActiveCard('Assigned'); setShowTable(true); }} className="lg:col-span-1" />
+        <AnalyticsCard title="In Progress" value={metrics.editingInProgress} icon={Clock} onClick={() => { setActiveCard('In Progress'); setShowTable(true); }} className="lg:col-span-1 border-blue-500/20" />
+        <AnalyticsCard title="In Review" value={metrics.clientReview} icon={AlertCircle} onClick={() => { setActiveCard('In Review'); setShowTable(true); }} className="lg:col-span-1 border-amber-500/20" />
+        <AnalyticsCard title="Approved" value={metrics.clientApproved} icon={CheckCircle} onClick={() => { setActiveCard('Approved'); setShowTable(true); }} className="lg:col-span-1 border-emerald-500/20" />
+        <AnalyticsCard title="Delivered" value={metrics.projectDelivered} icon={Video} onClick={() => { setActiveCard('Delivered'); setShowTable(true); }} className="lg:col-span-1 border-indigo-500/20" />
+        <AnalyticsCard title="Closed" value={metrics.projectClosed} icon={CheckCircle} onClick={() => { setActiveCard('Closed'); setShowTable(true); }} className="lg:col-span-1 border-zinc-500/20" />
       </div>
+
+      {showTable && (
+        <div id="detailed_prod_table_block" className="bg-zinc-950/80 border border-zinc-800 rounded-2xl overflow-hidden mt-6 animate-in fade-in slide-in-from-bottom-4">
+          <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-zinc-300">
+              Detailed Production Records - {activeCard}
+            </h3>
+            <button onClick={() => setShowTable(false)} className="text-zinc-500 hover:text-white font-bold p-1 px-2 rounded bg-zinc-900 border border-zinc-800 transition-colors uppercase font-mono text-[10px]">✕ Close</button>
+          </div>
+          <div className="overflow-x-auto p-4">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-zinc-800 text-zinc-500 font-mono">
+                  <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Production ID</th>
+                  <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Tracking ID</th>
+                  <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Assigned Editor</th>
+                  <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Editing Status</th>
+                  <th className="pb-3 pr-4 uppercase tracking-wider font-semibold">Target Delivery Date</th>
+                  <th className="pb-3 uppercase tracking-wider font-semibold">Project Priority</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/50 text-zinc-300 font-sans">
+                {(() => {
+                  let list = filteredProd;
+                  if (activeCard === 'New Rcvd') {
+                    list = filteredProd.filter(p => p.editing_status === 'Raw Footage Received');
+                  } else if (activeCard === 'Assigned') {
+                    list = filteredProd.filter(p => p.editing_status === 'Editor Assigned');
+                  } else if (activeCard === 'In Progress') {
+                    list = filteredProd.filter(p => p.editing_status === 'Editing Started' || p.editing_status === 'Editing In Progress');
+                  } else if (activeCard === 'In Review') {
+                    list = filteredProd.filter(p => p.editing_status === 'Client Review Sent');
+                  } else if (activeCard === 'Approved') {
+                    list = filteredProd.filter(p => p.editing_status === 'Approved' || p.editing_status === 'Final Approval');
+                  } else if (activeCard === 'Delivered') {
+                    list = filteredProd.filter(p => p.editing_status === 'Project Delivered' || p.editing_status === 'Delivered');
+                  } else if (activeCard === 'Closed') {
+                    list = filteredProd.filter(p => p.editing_status === 'Project Closed' || p.editing_status === 'Completed');
+                  }
+                  if (list.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-zinc-500 font-mono font-bold">No records found</td>
+                      </tr>
+                    );
+                  }
+                  return list.map(p => (
+                    <tr key={p.production_id} className="hover:bg-zinc-900/40">
+                      <td className="py-3 pr-4 font-mono text-[10px] text-amber-500">{p.production_id}</td>
+                      <td className="py-3 pr-4 font-mono text-[10px] text-zinc-400 font-bold">{p.tracking_id}</td>
+                      <td className="py-3 pr-4 font-semibold text-white">{cleanStaffName(p.editor_assigned || p.assigned_editors)}</td>
+                      <td className="py-3 pr-4 font-semibold text-white">
+                        <span className="px-2 py-0.5 rounded bg-zinc-850 text-indigo-400 font-mono text-[9px] uppercase">
+                          {p.editing_status}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-4 font-mono text-zinc-400">{p.target_delivery_date || 'None'}</td>
+                      <td className="py-3 font-semibold font-mono text-[9px] uppercase">
+                        <span className={`px-2 py-0.5 rounded ${
+                          p.project_priority === 'High' ? 'bg-rose-500/10 text-rose-400' : 'bg-zinc-800 text-zinc-400'
+                        }`}>
+                          {p.project_priority || 'Normal'}
+                        </span>
+                      </td>
+                    </tr>
+                  ));
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden mt-6 shadow-xl">
         <div className="p-5 border-b border-zinc-800 bg-zinc-900/30">
@@ -550,6 +825,9 @@ export const OwnerProductionPerformance = () => {
                   <td className="py-3 text-right font-mono text-rose-400">{s.revRate.toFixed(1)}%</td>
                 </tr>
               ))}
+              {metrics.staffStats.length === 0 && (
+                <tr><td colSpan={5} className="py-4 text-center font-mono text-zinc-505 font-bold">No production staff found.</td></tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -557,7 +557,7 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
   // Toggle modes
   const [internalTab, setInternalTab] = useState<'list' | 'create' | 'profiles' | 'packages' | 'calendar'>('list');
   const activeTab = externalActiveTab || internalTab;
-  const setActiveTab = externalActiveTab || setInternalTab;
+  const setActiveTab = externalSetActiveTab || setInternalTab;
 
   const [logoBase64, setLogoBase64] = useState<string>('');
   const [formSaving, setFormSaving] = useState(false);
