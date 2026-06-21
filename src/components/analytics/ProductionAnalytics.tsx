@@ -161,7 +161,9 @@ export const ProductionAnalytics: React.FC = () => {
   }, [leads, orders, production, rawFootage, activeRange, appliedSearchText, appliedStartDateStr, appliedEndDateStr]);
 
   // Compute Card Metrics
-  const totalProductionCount = filteredProduction.length;
+  const totalProductionCount = leads.filter(l => 
+    ['Raw Footage Received', 'Editor Assigned', 'Editing In Progress', 'Client Review', 'Final Approval'].includes(l.status)
+  ).length;
   const rawFootageQueueCount = filteredProduction.filter(p => p.editing_status === 'Raw Footage Received').length;
   const editorAssignedCount = filteredProduction.filter(p => p.editing_status === 'Editor Assigned').length;
   const editingStartedCount = filteredProduction.filter(p => p.editing_status === 'Editing Started').length;

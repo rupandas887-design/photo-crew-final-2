@@ -40,16 +40,16 @@ export const SalesAnalytics: React.FC = () => {
   }, [quotations, activeRange]);
 
   // Compute Card metrics (leads and statuses as single source of truth)
-  const totalLeadsCount = filteredLeads.length;
-  const newLeadsCount = filteredLeads.filter(l => l.status === 'New Lead').length;
-  const followUpPendingCount = filteredLeads.filter(l => l.status === 'Follow Up' || l.status === 'Follow-Up' || l.status === 'Follow-up Pending').length;
-  const quotationSentCount = filteredLeads.filter(l => l.status === 'Quotation Sent').length;
-  const negotiationCount = filteredLeads.filter(l => l.status === 'Negotiation').length;
+  const totalLeadsCount = leads.length;
+  const newLeadsCount = leads.filter(l => l.status === 'New Lead').length;
+  const followUpPendingCount = leads.filter(l => l.status === 'Follow Up' || l.status === 'Follow-Up' || l.status === 'Follow-up Pending').length;
+  const quotationSentCount = leads.filter(l => l.status === 'Quotation Sent').length;
+  const negotiationCount = leads.filter(l => l.status === 'Negotiation').length;
   
   // COUNT(leads where current_status = 'Order Confirmed')
-  const orderConfirmedCount = filteredLeads.filter(l => l.status === 'Order Confirmed').length;
+  const orderConfirmedCount = leads.filter(l => l.status === 'Order Confirmed').length;
   
-  const lostLeadsCount = filteredLeads.filter(l => l.status === 'Lost Lead' || l.status === 'Cancelled' || l.status === 'Lost').length;
+  const lostLeadsCount = leads.filter(l => l.status === 'Lost Lead' || l.status === 'Cancelled' || l.status === 'Lost').length;
   
   // (Order Confirmed ÷ Total Leads) × 100
   const conversionRateFloat = totalLeadsCount > 0 
@@ -57,10 +57,10 @@ export const SalesAnalytics: React.FC = () => {
     : 0;
 
   // SUM(received_amount)
-  const paymentReceivedSum = filteredLeads.reduce((sum, l) => sum + (l.received_amount || 0), 0);
+  const paymentReceivedSum = leads.reduce((sum, l) => sum + (l.received_amount || 0), 0);
 
   // SUM(final_amount - received_amount)
-  const paymentPendingSum = filteredLeads.reduce((sum, l) => {
+  const paymentPendingSum = leads.reduce((sum, l) => {
     const final = l.final_amount || l.budget || 0;
     const received = l.received_amount || 0;
     return sum + Math.max(0, final - received);

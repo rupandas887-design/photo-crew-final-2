@@ -588,7 +588,7 @@ export const Dashboard: React.FC = () => {
               <tr className="bg-zinc-950/80 text-zinc-400 font-bold border-b border-zinc-900 text-[10px] uppercase font-mono tracking-wider">
                 <th className="p-3 pl-5">Order ID</th>
                 <th className="p-3">Customer & Package</th>
-                <th className="p-3">current stage</th>
+                <th className="p-3">Current Status</th>
                 <th className="p-3">Ops / Crew Assignments</th>
                 <th className="p-3">Post-production edits</th>
                 <th className="p-3">billings status</th>
@@ -619,7 +619,7 @@ export const Dashboard: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Current Stage */}
+                    {/* Current Status */}
                     <td className="p-3 font-mono">
                       <span className="px-2 py-0.5 rounded text-[9.5px] font-black uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
                         {order.current_stage}

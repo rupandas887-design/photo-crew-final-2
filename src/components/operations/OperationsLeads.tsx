@@ -127,8 +127,13 @@ export const OperationsLeads: React.FC = () => {
     notes: string;
   }>>({});
 
-  const [paymentCollectionStatus, setPaymentCollectionStatus] = useState<'Full Payment Received' | 'Partial Payment Received' | 'Payment Pending'>('Payment Pending');
+  const [paymentCollectionStatus, setPaymentCollectionStatus] = useState<'Full Payment Received' | 'Partial Payment Received' | 'Payment Pending' | ''>('');
   const [additionalReceived, setAdditionalReceived] = useState<number>(0);
+
+  // Status Update Popup Modal State (Requirement 3)
+  const [updatingStatusOrderId, setUpdatingStatusOrderId] = useState<string | null>(null);
+  const [newSelectedStatus, setNewSelectedStatus] = useState<string>('');
+  const [statusNotes, setStatusNotes] = useState<string>('');
 
   // Staff Assignment Success Popup State
   const [successModalData, setSuccessModalData] = useState<{
@@ -299,6 +304,39 @@ export const OperationsLeads: React.FC = () => {
     });
     return list;
   }, [filteredOrders, sortBy, sortOrder, staffAssignments]);
+
+  const openRawFootageReceivedModal = (orderId: string) => {
+    setReceivingFootageOrderId(orderId);
+    setFootageForm({
+      footage_link: '',
+      storage_type: '',
+      upload_notes: ''
+    });
+
+    const op = getOpDetails(orderId);
+    const kits = op?.equipment_kit ? op.equipment_kit.split(',').map((sName: string) => sName.trim()).filter(Boolean) : [];
+    const initialHandovers: Record<string, {
+      return_status: 'Returned' | 'Not Returned' | 'Damaged' | 'Missing' | '';
+      returned_by: string;
+      return_date: string;
+      notes: string;
+    }> = {};
+    kits.forEach((k: string) => {
+      initialHandovers[k] = {
+        return_status: '',
+        returned_by: '',
+        return_date: '',
+        notes: ''
+      };
+    });
+    setFootageHandoverStates(initialHandovers);
+    
+    setHardDiskReceived(false);
+    setMemoryCardReceived(false);
+    
+    setPaymentCollectionStatus('');
+    setAdditionalReceived(0);
+  };
 
   const startAssigning = (order: Order) => {
     const op = getOpDetails(order.order_id);
@@ -842,7 +880,7 @@ export const OperationsLeads: React.FC = () => {
               <th className="p-4 font-bold">Event Time</th>
               <th className="p-4 font-bold">Reporting Time</th>
               <th className="p-4 font-bold">Assigned Team</th>
-              <th className="p-4 font-bold">Current Stage</th>
+              <th className="p-4 font-bold">Current Status</th>
               <th className="p-4 font-bold text-right text-zinc-400">Actions</th>
             </tr>
           </thead>
@@ -930,60 +968,16 @@ export const OperationsLeads: React.FC = () => {
 
                         {/* Update Status */}
                         {canEdit && (currentStage === 'Event Scheduled' || currentStage === 'Event Completed') && (
-                          <select
-                            value=""
-                            onChange={async (e) => {
-                              const newStatus = e.target.value;
-                              if (newStatus === 'Event Completed') {
-                                try {
-                                  await markEventCompleted(ord.order_id, '');
-                                  alert(`Order ${ord.order_id} has been marked as Event Completed in Supabase and UI has been refreshed!`);
-                                } catch (error) {
-                                  alert(`Failed to update status to Event Completed: ${error}`);
-                                }
-                              } else if (newStatus === 'Event Cancelled') {
-                                if (confirm(`Are you sure you want to cancel the event for ${ord.customer_name}?`)) {
-                                  try {
-                                    await updateOrderStage(ord.order_id, 'Event Cancelled');
-                                    alert(`Order ${ord.order_id} has been cancelled in Supabase.`);
-                                  } catch (error) {
-                                    alert(`Failed to cancel event: ${error}`);
-                                  }
-                                }
-                              } else if (newStatus === 'Raw Footage Received') {
-                                setReceivingFootageOrderId(ord.order_id);
-                                const existingRf = rawFootage?.find(f => f.order_id === ord.order_id);
-                                setFootageForm({
-                                  footage_link: existingRf?.server_path || '',
-                                  storage_type: existingRf?.storage_type || '',
-                                  upload_notes: ''
-                                });
-                                // Initialize footageHandoverStates for each assigned equipment item
-                                const op = getOpDetails(ord.order_id);
-                                const kits = op?.equipment_kit ? op.equipment_kit.split(',').map((sName: string) => sName.trim()).filter(Boolean) : [];
-                                const initialHandovers: any = {};
-                                kits.forEach((k: string) => {
-                                  initialHandovers[k] = {
-                                    return_status: '',
-                                    returned_by: currentUserName,
-                                    return_date: new Date().toISOString().split('T')[0],
-                                    notes: ''
-                                  };
-                                });
-                                setFootageHandoverStates(initialHandovers);
-                              }
+                          <button
+                            onClick={() => {
+                              setUpdatingStatusOrderId(ord.order_id);
+                              setNewSelectedStatus('');
+                              setStatusNotes('');
                             }}
-                            className="px-2 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 rounded-full text-[10px] font-mono font-bold cursor-pointer transition-all uppercase"
+                            className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded text-[10px] font-mono font-bold cursor-pointer transition-all uppercase"
                           >
-                            <option value="">▼ UPDATE</option>
-                            {currentStage === 'Event Scheduled' && <>
-                              <option value="Event Completed">Event Completed</option>
-                              <option value="Event Cancelled">Event Cancelled</option>
-                            </>}
-                            {currentStage === 'Event Completed' && (
-                              <option value="Raw Footage Received">Raw Footage Received</option>
-                            )}
-                          </select>
+                            Update Status
+                          </button>
                         )}
 
                         {currentStage === 'Raw Footage Received' && (
@@ -1032,56 +1026,7 @@ export const OperationsLeads: React.FC = () => {
                         {/* Step 4 - Event Completed: Receive Raw Footage */}
                         {canEdit && (currentStage === 'Event Completed') && (
                           <button
-                            onClick={() => {
-                              setReceivingFootageOrderId(ord.order_id);
-                              const existingRf = rawFootage?.find(f => f.order_id === ord.order_id);
-                              setFootageForm({
-                                footage_link: existingRf?.server_path || '',
-                                storage_type: existingRf?.storage_type || '',
-                                upload_notes: ''
-                              });
-
-                              // Initialize footageHandoverStates for each assigned equipment item
-                              const op = getOpDetails(ord.order_id);
-                              const kits = op?.equipment_kit ? op.equipment_kit.split(',').map((sName: string) => sName.trim()).filter(Boolean) : [];
-                              const initialHandovers: Record<string, {
-                                return_status: 'Returned' | 'Not Returned' | 'Damaged' | 'Missing' | '';
-                                returned_by: string;
-                                return_date: string;
-                                notes: string;
-                              }> = {};
-                              kits.forEach((k: string) => {
-                                initialHandovers[k] = {
-                                  return_status: '',
-                                  returned_by: currentUserName || 'Operations Team',
-                                  return_date: new Date().toISOString().split('T')[0],
-                                  notes: ''
-                                };
-                              });
-                              setFootageHandoverStates(initialHandovers);
-                              
-                              setHardDiskReceived(false);
-                              setMemoryCardReceived(false);
-                              
-                              const existingPay = payments?.find(p => p.order_id === ord.order_id);
-                              if (existingPay) {
-                                if (existingPay.payment_collection_status) {
-                                  setPaymentCollectionStatus(existingPay.payment_collection_status as any);
-                                } else {
-                                  if (existingPay.payment_status === 'Fully Paid') {
-                                    setPaymentCollectionStatus('Full Payment Received');
-                                  } else if (existingPay.payment_status === 'Partially Paid') {
-                                    setPaymentCollectionStatus('Partial Payment Received');
-                                  } else {
-                                    setPaymentCollectionStatus('Payment Pending');
-                                  }
-                                }
-                                setAdditionalReceived(existingPay.additional_received || existingPay.final_payment_received || 0);
-                              } else {
-                                setPaymentCollectionStatus('Payment Pending');
-                                setAdditionalReceived(0);
-                              }
-                            }}
+                            onClick={() => openRawFootageReceivedModal(ord.order_id)}
                             className="px-2 py-1 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-400 font-mono font-bold text-[10px] rounded cursor-pointer transition-all uppercase animate-pulse"
                           >
                             Receive Raw Footage
@@ -1447,7 +1392,7 @@ export const OperationsLeads: React.FC = () => {
                 {/* Current Stage Selection */}
                 <div>
                   <label className="block text-[11px] font-mono font-extrabold uppercase text-amber-500 mb-1">
-                    Current Workflow Stage / Dashboard
+                    Current Workflow Status / Dashboard
                   </label>
                   <select
                     value={assignForm.current_stage}
@@ -1811,11 +1756,15 @@ Please report on time and update status through the portal.`;
               e.preventDefault();
               
               if (!footageForm.footage_link || !footageForm.footage_link.trim()) {
-                alert('Please enter a valid Raw Footage Drive Link.');
+                alert('Please enter a valid Raw Footage Link.');
                 return;
               }
               if (!footageForm.storage_type) {
                 alert('Please select a Storage Type.');
+                return;
+              }
+              if (!paymentCollectionStatus) {
+                alert('Please select a Payment Collection Status.');
                 return;
               }
 
@@ -1868,14 +1817,15 @@ Please report on time and update status through the portal.`;
             }} className="space-y-4 text-left">
               <div>
                 <label className="block text-[10px] font-bold text-zinc-400 uppercase font-mono mb-1">
-                  Raw Footage Drive Link (Google Drive / cloud)
+                  Raw Footage Link *
                 </label>
                 <input
                   type="url"
+                  required
                   value={footageForm.footage_link}
                   onChange={(e) => setFootageForm({ ...footageForm, footage_link: e.target.value })}
-                  placeholder="e.g. https://drive.google.com/drive/folders/..."
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 font-mono placeholder:text-zinc-600"
+                  placeholder="Insert Google Drive, Aspire, Dropbox, or other cloud storage link"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 font-mono placeholder:text-zinc-650"
                 />
               </div>
 
@@ -2134,6 +2084,129 @@ Please report on time and update status through the portal.`;
           </div>
         </div>
       )}
+
+      {/* Update Status Popup Modal (Requirement 3) */}
+      {updatingStatusOrderId && (() => {
+        const ordToUpdate = orders.find(o => o.order_id === updatingStatusOrderId);
+        if (!ordToUpdate) return null;
+        
+        const currentStageStr = ordToUpdate.current_stage;
+        
+        return (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl relative p-5 space-y-4">
+              <h3 className="text-sm font-bold text-amber-500 font-mono uppercase flex items-center gap-1.5 border-b border-zinc-800 pb-2">
+                <span>🔄</span> Update Order Stage Status
+              </h3>
+              
+              <div className="space-y-3.5">
+                {/* Current Status display */}
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-400 uppercase font-mono mb-1">
+                    Current Status
+                  </label>
+                  <div className="px-3 py-2 bg-zinc-950 border border-zinc-850 rounded-xl text-xs font-mono text-zinc-300 font-bold">
+                    {currentStageStr}
+                  </div>
+                </div>
+
+                {/* New Status Dropdown */}
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-400 uppercase font-mono mb-1">
+                    New Status *
+                  </label>
+                  <select
+                    required
+                    value={newSelectedStatus}
+                    onChange={(e) => setNewSelectedStatus(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100"
+                  >
+                    <option value="">-- Select New Status --</option>
+                    {currentStageStr === 'Event Scheduled' && (
+                      <>
+                        <option value="Event Completed">Event Completed</option>
+                        <option value="Event Cancelled">Event Cancelled</option>
+                      </>
+                    )}
+                    {currentStageStr === 'Event Completed' && (
+                      <option value="Raw Footage Received">Raw Footage Received</option>
+                    )}
+                  </select>
+                </div>
+
+                {/* Notes/Remarks field */}
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-400 uppercase font-mono mb-1">
+                    Notes / Remarks
+                  </label>
+                  <textarea
+                    value={statusNotes}
+                    onChange={(e) => setStatusNotes(e.target.value)}
+                    placeholder="Enter process remarks or notes here..."
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-zinc-100 font-sans"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {/* Actions/Button */}
+              <div className="flex justify-end gap-2 pt-2 border-t border-zinc-850">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUpdatingStatusOrderId(null);
+                    setNewSelectedStatus('');
+                    setStatusNotes('');
+                  }}
+                  className="px-4 py-2 bg-zinc-800 text-zinc-300 text-xs rounded-xl cursor-pointer hover:bg-zinc-700 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!newSelectedStatus) {
+                      alert('Please select a new status.');
+                      return;
+                    }
+                    
+                    if (newSelectedStatus === 'Event Completed') {
+                      try {
+                        await markEventCompleted(ordToUpdate.order_id, statusNotes);
+                        alert(`Order ${ordToUpdate.order_id} has been marked as Event Completed in Supabase and UI refreshed!`);
+                        setUpdatingStatusOrderId(null);
+                        setNewSelectedStatus('');
+                        setStatusNotes('');
+                      } catch (error) {
+                        alert(`Failed to update status: ${error}`);
+                      }
+                    } else if (newSelectedStatus === 'Event Cancelled') {
+                      if (confirm(`Are you sure you want to cancel the event for ${ordToUpdate.customer_name}?`)) {
+                        try {
+                          await updateOrderStage(ordToUpdate.order_id, 'Event Cancelled');
+                          alert(`Order ${ordToUpdate.order_id} has been cancelled in Supabase.`);
+                          setUpdatingStatusOrderId(null);
+                          setNewSelectedStatus('');
+                          setStatusNotes('');
+                        } catch (error) {
+                          alert(`Failed to cancel event: ${error}`);
+                        }
+                      }
+                    } else if (newSelectedStatus === 'Raw Footage Received') {
+                      // Close this modal and trigger the pristine blank raw footage received modal
+                      setUpdatingStatusOrderId(null);
+                      openRawFootageReceivedModal(ordToUpdate.order_id);
+                    }
+                  }}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-xl cursor-pointer transition animate-none"
+                >
+                  Update
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

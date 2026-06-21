@@ -37,19 +37,19 @@ export const OperationsAnalytics: React.FC = () => {
   }, [leads, activeRange]);
 
   // Total New Orders = COUNT(status = 'Order Confirmed')
-  const newOrdersCount = filteredLeads.filter(l => l.status === 'Order Confirmed').length;
+  const newOrdersCount = leads.filter(l => l.status === 'Order Confirmed').length;
   
   // Total Event Scheduled = COUNT(status = 'Event Scheduled')
-  const eventsScheduledCount = filteredLeads.filter(l => l.status === 'Event Scheduled').length;
+  const eventsScheduledCount = leads.filter(l => l.status === 'Event Scheduled').length;
 
   // Staff Assigned = COUNT(status = 'Event Scheduled')
-  const staffAssignedCount = filteredLeads.filter(l => l.status === 'Event Scheduled').length;
+  const staffAssignedCount = leads.filter(l => l.status === 'Event Scheduled').length;
 
   // Total Event Completed = COUNT(status = 'Event Completed')
-  const eventsCompletedCount = filteredLeads.filter(l => l.status === 'Event Completed').length;
+  const eventsCompletedCount = leads.filter(l => l.status === 'Event Completed').length;
 
   // Total Raw Footage Received = COUNT(status = 'Raw Footage Received')
-  const rawFootageReceivedCount = filteredLeads.filter(l => l.status === 'Raw Footage Received').length;
+  const rawFootageReceivedCount = leads.filter(l => l.status === 'Raw Footage Received').length;
 
   // Event Completion Rate = (Event Completed ÷ Event Scheduled) × 100
   const upcomingEventsCount = eventsScheduledCount > 0 

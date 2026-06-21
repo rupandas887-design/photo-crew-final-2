@@ -107,7 +107,7 @@ export const OrderSearch: React.FC = () => {
                   </div>
 
                   <div className="text-right">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-widest block font-mono">Current Stage Tracker</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest block font-mono">Current Status Tracker</span>
                     <strong className="text-xs bg-indigo-650 text-white rounded px-2.5 py-1 inline-block mt-1 uppercase font-bold tracking-tight">
                       {lead.status}
                     </strong>

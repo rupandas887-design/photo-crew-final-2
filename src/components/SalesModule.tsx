@@ -630,7 +630,7 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
 
   // Leads export report handlers
   const handleDownloadCSV = () => {
-    const headers = ["Lead ID", "Order ID", "Customer Name", "Mobile Number", "Event Type", "Event Date", "Current Stage", "Current Status", "Payment Status", "Created Date"];
+    const headers = ["Lead ID", "Order ID", "Customer Name", "Mobile Number", "Event Type", "Event Date", "Current Status", "Payment Status", "Created Date"];
     const rows = filteredLeads.map(l => {
       const ord = orders.find(o => o.lead_id === l.lead_id);
       const pay = ord ? payments?.find(p => p.order_id === ord.order_id) : null;
@@ -642,7 +642,6 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
         l.event_type,
         l.event_date || 'N/A',
         l.status,
-        l.remarks.slice(0, 50).replace(/["\n\r]/g, ' '),
         pay ? pay.payment_status : 'Pending',
         l.created_date
       ];
@@ -661,7 +660,7 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
   };
 
   const handleDownloadExcel = () => {
-    const headers = ["Lead ID", "Order ID", "Customer Name", "Mobile Number", "Event Type", "Event Date", "Current Stage", "Current Status", "Payment Status", "Created Date"];
+    const headers = ["Lead ID", "Order ID", "Customer Name", "Mobile Number", "Event Type", "Event Date", "Current Status", "Payment Status", "Created Date"];
     const rows = filteredLeads.map(l => {
       const ord = orders.find(o => o.lead_id === l.lead_id);
       const pay = ord ? payments?.find(p => p.order_id === ord.order_id) : null;
@@ -673,7 +672,6 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
         l.event_type,
         l.event_date || 'N/A',
         l.status,
-        l.remarks.slice(0, 50).replace(/["\t\n\r]/g, ' '),
         pay ? pay.payment_status : 'Pending',
         l.created_date
       ];
@@ -3712,7 +3710,6 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
                     <th className="p-3.5">Mobile Number</th>
                     <th className="p-3.5">Event Type</th>
                     <th className="p-3.5">Event Date</th>
-                    <th className="p-3.5">Current Stage</th>
                     <th className="p-3.5">Current Status</th>
                     <th className="p-3.5">Payment Status</th>
                     <th className="p-3.5">Created Date</th>
@@ -3759,16 +3756,6 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
                           </td>
                           <td className="p-3.5 font-mono text-zinc-350">
                             {lead.event_date}
-                          </td>
-                          <td className="p-3.5">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight ${
-                              stageLabel === 'Sales' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
-                              stageLabel === 'Operations' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' :
-                              stageLabel === 'Production' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
-                              'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                            }`}>
-                              {stageLabel}
-                            </span>
                           </td>
                           <td className="p-3.5">
                             <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold tracking-tight uppercase border ${
@@ -4311,53 +4298,58 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
                                                 <input
                                                   type="text"
                                                   value={inc}
+                                                  disabled={isLeadLocked}
                                                   onChange={(e) => handleEditInclusion(pkgKey, idx, e.target.value)}
-                                                  className="bg-transparent border-b border-transparent hover:border-slate-800 focus:border-slate-700 focus:outline-none transition-all py-0.5 text-[11px] text-slate-200 w-full"
+                                                  className="bg-transparent border-b border-transparent hover:border-slate-800 focus:border-slate-700 focus:outline-none transition-all py-0.5 text-[11px] text-slate-200 w-full disabled:opacity-80"
                                                 />
-                                                <button
-                                                  type="button"
-                                                  onClick={() => handleRemoveInclusion(pkgKey, idx)}
-                                                  className="text-slate-400 hover:text-red-400 opacity-20 group-hover:opacity-100 transition-all text-sm px-1 cursor-pointer"
-                                                  title="Remove Item"
-                                                >
-                                                  ×
-                                                </button>
+                                                {!isLeadLocked && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveInclusion(pkgKey, idx)}
+                                                    className="text-slate-400 hover:text-red-400 opacity-20 group-hover:opacity-100 transition-all text-sm px-1 cursor-pointer"
+                                                    title="Remove Item"
+                                                  >
+                                                    ×
+                                                  </button>
+                                                )}
                                               </div>
                                             ))}
                                           </div>
 
                                           {/* Inline Add Component */}
-                                          <div className="flex gap-1.5 pt-1.5">
-                                            <input
-                                              id={`new_inc_input_${pkgKey}`}
-                                              type="text"
-                                              placeholder="Add new item..."
-                                              className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] w-full text-slate-300 focus:outline-none focus:border-slate-700"
-                                              onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                  e.preventDefault();
-                                                  const val = e.currentTarget.value;
-                                                  if (val) {
-                                                    handleAddInclusion(pkgKey, val);
-                                                    e.currentTarget.value = '';
+                                          {!isLeadLocked && (
+                                            <div className="flex gap-1.5 pt-1.5">
+                                              <input
+                                                id={`new_inc_input_${pkgKey}`}
+                                                type="text"
+                                                placeholder="Add new item..."
+                                                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] w-full text-slate-300 focus:outline-none focus:border-slate-700"
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    const val = e.currentTarget.value;
+                                                    if (val) {
+                                                      handleAddInclusion(pkgKey, val);
+                                                      e.currentTarget.value = '';
+                                                    }
                                                   }
-                                                }
-                                              }}
-                                            />
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const el = document.getElementById(`new_inc_input_${pkgKey}`) as HTMLInputElement;
-                                                if (el && el.value) {
-                                                  handleAddInclusion(pkgKey, el.value);
-                                                  el.value = '';
-                                                }
-                                              }}
-                                              className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1 rounded-lg text-[10px] cursor-pointer font-semibold transition-all"
-                                            >
-                                              Add
-                                            </button>
-                                          </div>
+                                                }}
+                                              />
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  const el = document.getElementById(`new_inc_input_${pkgKey}`) as HTMLInputElement;
+                                                  if (el && el.value) {
+                                                    handleAddInclusion(pkgKey, el.value);
+                                                    el.value = '';
+                                                  }
+                                                }}
+                                                className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1 rounded-lg text-[10px] cursor-pointer font-semibold transition-all"
+                                              >
+                                                Add
+                                              </button>
+                                            </div>
+                                          )}
                                         </div>
 
                                         {/* Deliverables Block */}
@@ -4372,53 +4364,58 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
                                                 <input
                                                   type="text"
                                                   value={del}
+                                                  disabled={isLeadLocked}
                                                   onChange={(e) => handleEditDeliverable(pkgKey, idx, e.target.value)}
-                                                  className="bg-transparent border-b border-transparent hover:border-slate-800 focus:border-slate-700 focus:outline-none transition-all py-0.5 text-[11px] text-slate-200 w-full"
+                                                  className="bg-transparent border-b border-transparent hover:border-slate-800 focus:border-slate-700 focus:outline-none transition-all py-0.5 text-[11px] text-slate-200 w-full disabled:opacity-80"
                                                 />
-                                                <button
-                                                  type="button"
-                                                  onClick={() => handleRemoveDeliverable(pkgKey, idx)}
-                                                  className="text-slate-400 hover:text-red-400 opacity-20 group-hover:opacity-100 transition-all text-sm px-1 cursor-pointer"
-                                                  title="Remove Deliverable"
-                                                >
-                                                  ×
-                                                </button>
+                                                {!isLeadLocked && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveDeliverable(pkgKey, idx)}
+                                                    className="text-slate-400 hover:text-red-400 opacity-20 group-hover:opacity-100 transition-all text-sm px-1 cursor-pointer"
+                                                    title="Remove Deliverable"
+                                                  >
+                                                    ×
+                                                  </button>
+                                                )}
                                               </div>
                                             ))}
                                           </div>
 
                                           {/* Inline Add Deliverable */}
-                                          <div className="flex gap-1.5 pt-1.5">
-                                            <input
-                                              id={`new_del_input_${pkgKey}`}
-                                              type="text"
-                                              placeholder="Add new deliverable..."
-                                              className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] w-full text-slate-300 focus:outline-none focus:border-slate-700"
-                                              onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                  e.preventDefault();
-                                                  const val = e.currentTarget.value;
-                                                  if (val) {
-                                                    handleAddDeliverable(pkgKey, val);
-                                                    e.currentTarget.value = '';
+                                          {!isLeadLocked && (
+                                            <div className="flex gap-1.5 pt-1.5">
+                                              <input
+                                                id={`new_del_input_${pkgKey}`}
+                                                type="text"
+                                                placeholder="Add new deliverable..."
+                                                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] w-full text-slate-300 focus:outline-none focus:border-slate-700"
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    const val = e.currentTarget.value;
+                                                    if (val) {
+                                                      handleAddDeliverable(pkgKey, val);
+                                                      e.currentTarget.value = '';
+                                                    }
                                                   }
-                                                }
-                                              }}
-                                            />
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const el = document.getElementById(`new_del_input_${pkgKey}`) as HTMLInputElement;
-                                                if (el && el.value) {
-                                                  handleAddDeliverable(pkgKey, el.value);
-                                                  el.value = '';
-                                                }
-                                              }}
-                                              className="bg-slate-800 hover:bg-slate-700 text-slate-305 border border-slate-700 px-3 py-1 rounded-lg text-[10px] cursor-pointer font-semibold transition-all"
-                                            >
-                                              Add
-                                            </button>
-                                          </div>
+                                                }}
+                                              />
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  const el = document.getElementById(`new_del_input_${pkgKey}`) as HTMLInputElement;
+                                                  if (el && el.value) {
+                                                    handleAddDeliverable(pkgKey, el.value);
+                                                    el.value = '';
+                                                  }
+                                                }}
+                                                className="bg-slate-800 hover:bg-slate-700 text-slate-305 border border-slate-700 px-3 py-1 rounded-lg text-[10px] cursor-pointer font-semibold transition-all"
+                                              >
+                                                Add
+                                              </button>
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
                                     </div>
@@ -4435,9 +4432,10 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
                                     <input
                                       type="number"
                                       value={quoteAdditional || ''}
+                                      disabled={isLeadLocked}
                                       onChange={(e) => setQuoteAdditional(Math.max(0, parseInt(e.target.value) || 0))}
                                       placeholder="0"
-                                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-amber-400 font-mono focus:outline-none focus:border-slate-700 font-bold"
+                                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-amber-400 font-mono focus:outline-none focus:border-slate-700 font-bold disabled:opacity-50"
                                     />
                                   </div>
                                   <div>
@@ -4445,9 +4443,10 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
                                     <input
                                       type="number"
                                       value={quoteDiscount || ''}
+                                      disabled={isLeadLocked}
                                       onChange={(e) => setQuoteDiscount(Math.max(0, parseInt(e.target.value) || 0))}
                                       placeholder="0"
-                                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-rose-400 font-mono focus:outline-none focus:border-slate-700 font-bold"
+                                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-rose-400 font-mono focus:outline-none focus:border-slate-700 font-bold disabled:opacity-50"
                                     />
                                   </div>
                                 </div>
@@ -4483,21 +4482,28 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
                                 </label>
                                 <textarea
                                   value={quotationTerms}
+                                  disabled={isLeadLocked}
                                   onChange={(e) => setQuotationTerms(e.target.value)}
                                   rows={4}
-                                  className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-[10.5px] text-slate-300 font-mono focus:border-slate-700 focus:outline-none leading-relaxed"
+                                  className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-[10.5px] text-slate-300 font-mono focus:border-slate-700 focus:outline-none leading-relaxed disabled:opacity-50"
                                   placeholder="Type Terms Clauses..."
                                 />
                               </div>
 
                               {/* GENERATE ACTION */}
-                              <button
-                                type="button"
-                                onClick={handleCreateQuote}
-                                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-extrabold py-3 px-4 rounded-xl shadow-lg transition-all text-xs cursor-pointer tracking-wider text-center uppercase"
-                              >
-                                <span>Generate Quotation Proposal</span>
-                              </button>
+                              {isLeadLocked ? (
+                                <div className="w-full text-center py-2.5 bg-slate-950/40 text-rose-400 border border-slate-800/80 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-1.5">
+                                  <span>🔒</span> WORKFLOW LOCK: Lead Moved to Confirmed Orders (Operations Active)
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={handleCreateQuote}
+                                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-extrabold py-3 px-4 rounded-xl shadow-lg transition-all text-xs cursor-pointer tracking-wider text-center uppercase"
+                                >
+                                  <span>Generate Quotation Proposal</span>
+                                </button>
+                              )}
                             </div>
                           ) : (
                             /* PREMIUM DRAFT PREVIEW & SIMPLE PDF ACTIONS */
