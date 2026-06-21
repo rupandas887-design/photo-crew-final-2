@@ -3772,13 +3772,14 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const prodProj = augmentedProduction.find(p => p.production_id === assignment.production_id);
     if (prodProj) {
-      const currentAssigned = prodProj.assigned_staff ? prodProj.assigned_staff.split(', ') : [];
+      let currentAssigned = prodProj.assigned_staff ? prodProj.assigned_staff.split(', ').filter(s => s && s !== 'Unassigned' && s !== 'None') : [];
       if (!currentAssigned.includes(assignment.staff_name)) {
         currentAssigned.push(assignment.staff_name);
+        if (currentAssigned.length === 0) currentAssigned = ['Unassigned'];
         const updatedStaff = currentAssigned.join(', ');
         updateProduction(assignment.production_id, {
           assigned_staff: updatedStaff,
-          editor_assigned: assignment.staff_name, // keep the latest assigned as the main editor_assigned
+          editor_assigned: updatedStaff, // Use full list
           production_status: 'Editor Assigned'
         });
       }

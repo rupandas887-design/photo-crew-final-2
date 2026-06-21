@@ -37,19 +37,19 @@ export const OperationsAnalytics: React.FC = () => {
   }, [leads, activeRange]);
 
   // Total New Orders = COUNT(status = 'Order Confirmed')
-  const newOrdersCount = leads.filter(l => l.status === 'Order Confirmed').length;
+  const newOrdersCount = leads.filter(l => (l.current_status || l.status) === 'Order Confirmed').length;
   
   // Total Event Scheduled = COUNT(status = 'Event Scheduled')
-  const eventsScheduledCount = leads.filter(l => l.status === 'Event Scheduled').length;
+  const eventsScheduledCount = leads.filter(l => (l.current_status || l.status) === 'Event Scheduled').length;
 
   // Staff Assigned = COUNT(status = 'Event Scheduled')
-  const staffAssignedCount = leads.filter(l => l.status === 'Event Scheduled').length;
+  const staffAssignedCount = leads.filter(l => (l.current_status || l.status) === 'Event Scheduled').length;
 
   // Total Event Completed = COUNT(status = 'Event Completed')
-  const eventsCompletedCount = leads.filter(l => l.status === 'Event Completed').length;
+  const eventsCompletedCount = leads.filter(l => (l.current_status || l.status) === 'Event Completed').length;
 
   // Total Raw Footage Received = COUNT(status = 'Raw Footage Received')
-  const rawFootageReceivedCount = leads.filter(l => l.status === 'Raw Footage Received').length;
+  const rawFootageReceivedCount = leads.filter(l => (l.current_status || l.status) === 'Raw Footage Received').length;
 
   // Event Completion Rate = (Event Completed ÷ Event Scheduled) × 100
   const upcomingEventsCount = eventsScheduledCount > 0 
@@ -60,7 +60,7 @@ export const OperationsAnalytics: React.FC = () => {
   const todaysEventsCount = filteredLeads.filter(l => l.event_date === TODAY_REF).length;
   const overdueEventsCount = filteredLeads.filter(l => 
     l.event_date < TODAY_REF && 
-    !['Event Completed', 'Raw Footage Received', 'Project Delivered', 'Project Closed', 'Closed'].includes(l.status)
+    !['Event Completed', 'Raw Footage Received', 'Project Delivered', 'Project Closed', 'Closed'].includes(l.current_status || l.status)
   ).length;
 
   // Pie chart or Bar chart data for event types

@@ -67,17 +67,17 @@ export const BusinessOverviewAnalytics: React.FC = () => {
   // Total Events = COUNT(leads where status != 'New Lead' etc.)
   const totalEvents = useMemo(() => {
     const excludedStages = ['New Lead', 'Follow Up', 'Follow-Up', 'Quotation Sent', 'Negotiation', 'Lost Lead', 'Lost', 'Cancelled'];
-    return filteredLeads.filter(l => !excludedStages.includes(l.status)).length;
+    return filteredLeads.filter(l => !excludedStages.includes(l.current_status || l.status)).length;
   }, [filteredLeads]);
   
   // Completed Events = COUNT(status = 'Event Completed')
   const completedEvents = useMemo(() => {
-    return filteredLeads.filter(l => l.status === 'Event Completed').length;
+    return filteredLeads.filter(l => (l.current_status || l.status) === 'Event Completed').length;
   }, [filteredLeads]);
 
   const upcomingEvents = useMemo(() => {
     const activeStages = ['Order Confirmed', 'Event Scheduled'];
-    return filteredLeads.filter(l => activeStages.includes(l.status) && l.event_date >= TODAY_REF).length;
+    return filteredLeads.filter(l => activeStages.includes(l.current_status || l.status) && l.event_date >= TODAY_REF).length;
   }, [filteredLeads]);
 
   const ongoingEvents = useMemo(() => {
@@ -85,7 +85,10 @@ export const BusinessOverviewAnalytics: React.FC = () => {
   }, [filteredLeads]);
 
   const cancelledEvents = useMemo(() => {
-    return filteredLeads.filter(l => l.status === 'Lost Lead' || l.status === 'Cancelled').length;
+    return filteredLeads.filter(l => {
+      const s = l.current_status || l.status;
+      return s === 'Lost Lead' || s === 'Cancelled';
+    }).length;
   }, [filteredLeads]);
 
   // Fully Paid Events = COUNT(status = 'Project Closed' OR balance_amount = 0)
@@ -94,7 +97,7 @@ export const BusinessOverviewAnalytics: React.FC = () => {
       const final = l.final_amount || l.budget || 0;
       const received = l.received_amount || 0;
       const isZeroBalance = (final - received) === 0;
-      const isProjectClosed = l.status === 'Project Closed' || l.status === 'Closed';
+      const isProjectClosed = (l.current_status || l.status) === 'Project Closed' || (l.current_status || l.status) === 'Closed';
       return isProjectClosed || isZeroBalance;
     }).length;
   }, [filteredLeads]);

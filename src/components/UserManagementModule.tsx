@@ -868,9 +868,11 @@ export const UserManagementModule: React.FC = () => {
 
       {/* Mobile/Tablet Popup Modal for Forms */}
       {(showAddForm || editingUser || resettingPasswordUser) && (
-        <div id="user_forms_mobile_modal" className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl relative flex flex-col">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-850 sticky top-0 z-10 backdrop-blur-md">
+        <div id="user_forms_mobile_modal" className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-hidden animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-none sm:rounded-2xl w-full h-full sm:w-[95vw] sm:h-[95vh] md:w-[90vw] md:h-[90vh] lg:w-[90vw] lg:h-[90vh] max-w-4xl shadow-2xl relative flex flex-col overflow-hidden text-left bg-gradient-to-tr from-slate-900 via-slate-900 to-slate-950">
+            
+            {/* Sticky Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/40 sticky top-0 z-10 backdrop-blur-md shrink-0">
               <h3 className="text-xs font-black text-white flex items-center gap-1.5 font-mono uppercase tracking-wider">
                 {showAddForm && (
                   <>
@@ -903,9 +905,10 @@ export const UserManagementModule: React.FC = () => {
               </button>
             </div>
             
-            <div className="p-5 space-y-4 text-xs font-sans text-left">
+            {/* Scrollable Body Wrapper */}
+            <div className="p-4 sm:p-5 overflow-y-auto flex-1 text-xs text-left">
               {showAddForm && (
-                <form onSubmit={handleAddSubmit} className="space-y-4 text-xs">
+                <form onSubmit={handleAddSubmit} className="space-y-4">
                   <div>
                     <label className="block font-semibold text-slate-400 mb-1">Full Name *</label>
                     <input

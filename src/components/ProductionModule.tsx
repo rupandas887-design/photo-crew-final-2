@@ -228,6 +228,13 @@ export interface ProductionModuleProps {
 }
 
 export const ProductionModule: React.FC<ProductionModuleProps> = ({ activeSubTab, setActiveSubTab }) => {
+  const cleanStaffName = (name: string | undefined | null) => {
+    if (!name || name.trim() === '' || name === 'None') return 'Unassigned';
+    let clean = name.replace(/Unassigned[,+&\s]*/gi, '').replace(/[,+&\s]*Unassigned/gi, '').trim();
+    if (clean.replace(/[,+&\s]+/g, '') === '') return 'Unassigned';
+    return clean.replace(/^[,\s]+|[,\s]+$/g, '');
+  };
+
   const { 
     currentRole, 
     production, 
@@ -919,7 +926,7 @@ export const ProductionModule: React.FC<ProductionModuleProps> = ({ activeSubTab
           <td style="padding: 8px; border-bottom: 1px solid #ddd;">${order?.customer_name || ''}</td>
           <td style="padding: 8px; border-bottom: 1px solid #ddd;">${order?.event_type || ''}</td>
           <td style="padding: 8px; border-bottom: 1px solid #ddd;">${order?.event_date || ''}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${prod.editor_assigned || 'Unassigned'}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #ddd;">${cleanStaffName(prod.editor_assigned)}</td>
           <td style="padding: 8px; border-bottom: 1px solid #ddd;">${getProductionStatus(prod)}</td>
           <td style="padding: 8px; border-bottom: 1px solid #ddd;">${prod.expected_delivery_date || ''}</td>
           <td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">${prod.project_priority || 'Medium'}</td>
@@ -1270,8 +1277,14 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
   const today = new Date();
 
   // Filter/Derived definitions
-  const newProjects = leads.filter(p => !p.editor_assigned || p.editor_assigned === 'Unassigned');
-  const assignedProjects = leads.filter(p => p.editor_assigned && p.editor_assigned !== 'Unassigned' && p.editing_status !== 'Project Delivered' && p.editing_status !== 'Delivered' && p.editing_status !== 'Completed');
+  const newProjects = leads.filter(p => {
+    const editor = cleanStaffName(p.assigned_editor || (p as any).editor_assigned);
+    return editor === 'Unassigned';
+  });
+  const assignedProjects = leads.filter(p => {
+    const editor = cleanStaffName(p.assigned_editor || (p as any).editor_assigned);
+    return editor !== 'Unassigned' && p.editing_status !== 'Project Delivered' && p.editing_status !== 'Delivered' && p.editing_status !== 'Completed';
+  });
   const pendingProjects = leads.filter(p => !['Final Approval', 'Approved', 'Project Delivered', 'Delivered', 'Project Closed', 'Closed', 'Completed'].includes(p.editing_status));
   const delayedProjects = leads.filter(p => {
     if (['Final Approval', 'Approved', 'Project Delivered', 'Delivered', 'Project Closed', 'Closed', 'Completed'].includes(p.editing_status)) return false;
@@ -3098,7 +3111,7 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                         const order = rf ? orders.find(o => o.order_id === rf.order_id) : null;
                         
                         const customerName = order ? order.customer_name : 'Unknown';
-                        const editorName = prod.editor_assigned || 'Unassigned';
+                        const editorName = cleanStaffName(prod.editor_assigned);
                         const deliveryType = order ? order.event_type : 'Cinematic Highlights';
                         const targetDeliveryStr = prod.target_delivery_date || prod.expected_delivery_date || 'N/A';
                         const actualDeliveryStr = prod.delivery_date || prod.actual_delivery_date || 'Not Handed Over';
@@ -3265,7 +3278,7 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
 
                     <div className="mt-4 space-y-1.5 text-xs">
                       <div className="text-zinc-300 font-bold">
-                        Editor: <span className="text-white font-medium">{prod.editor_assigned || 'Unassigned (Waiting)'}</span>
+                        Editor: <span className="text-white font-medium">{cleanStaffName(prod.editor_assigned) === 'Unassigned' ? 'Unassigned (Waiting)' : cleanStaffName(prod.editor_assigned)}</span>
                       </div>
                       <div className="text-[10px] text-zinc-500 font-mono">
                         Tracking Code: <span className="text-zinc-400">{prod.tracking_id}</span>
@@ -3364,7 +3377,7 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                       </div>
                       
                       <div className="text-xs text-zinc-300">
-                        Client: <strong className="text-white">{orderItem?.client_name || 'N/A'}</strong> — Editor: <strong className="text-zinc-350">{prod.editor_assigned || 'Unassigned'}</strong>
+                        Client: <strong className="text-white">{orderItem?.client_name || 'N/A'}</strong> — Editor: <strong className="text-zinc-350">{cleanStaffName(prod.editor_assigned)}</strong>
                       </div>
                       
                       <div className="text-[10px] font-mono text-zinc-500 flex items-center gap-2">
@@ -3964,7 +3977,7 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                           <span className="text-[8px] font-mono bg-zinc-950 px-1.5 py-0.5 rounded text-zinc-500">{prod.expected_delivery_date}</span>
                         </div>
                         
-                        <div className="text-xs font-bold text-white leading-tight">Editor: {prod.editor_assigned || 'Unassigned'}</div>
+                        <div className="text-xs font-bold text-white leading-tight">Editor: {cleanStaffName(prod.editor_assigned)}</div>
                         <p className="text-[10px] text-zinc-450 line-clamp-1">{prod.remarks || 'No notes currentlylogged.'}</p>
                         
                         {canEdit && (
@@ -4083,7 +4096,7 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                         </span>
                       </div>
                       <div className="text-xs text-zinc-300 mt-1.5">
-                        Editor Assigned: <strong className="text-zinc-200">{prod.editor_assigned || 'Unassigned'}</strong> — Deliverables: 
+                        Editor Assigned: <strong className="text-zinc-200">{cleanStaffName(prod.editor_assigned)}</strong> — Deliverables: 
                         <span className="text-violet-400 font-mono text-[11px] ml-1 select-all">{prod.raw_footage_location || 'N/A'}</span>
                       </div>
                     </div>
@@ -4667,16 +4680,16 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
 
         return (
           <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 z-50 animate-fade-in text-zinc-105 select-none md:select-text">
-            <div className="bg-zinc-950 border border-zinc-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl p-4.5 space-y-4 relative text-left">
+            <div className="bg-zinc-950 border border-zinc-900 rounded-none sm:rounded-2xl w-full h-full sm:w-[95vw] sm:h-[95vh] md:w-[90vw] md:h-[90vh] lg:w-[90vw] lg:h-[90vh] max-w-5xl shadow-2xl relative flex flex-col overflow-hidden text-left bg-gradient-to-tr from-zinc-950 via-zinc-900 to-zinc-950">
               
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-zinc-900 pb-2.5">
+              {/* Sticky Header */}
+              <div className="flex items-center justify-between border-b border-zinc-900 p-4 sm:p-5 bg-zinc-950/40 sticky top-0 z-10 backdrop-blur-md shrink-0">
                 <div>
-                  <h3 className="text-lg font-black text-white flex items-center gap-2">
+                  <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
                     <span className="px-2 py-0.5 bg-violet-500/10 text-violet-400 border border-violet-500/20 text-[9px] font-mono tracking-widest uppercase rounded font-black">Project Dossier</span>
                     <span>Order Ref: {order.order_id}</span>
                   </h3>
-                  <p className="text-xs text-zinc-400 mt-1 font-mono uppercase tracking-wider">
+                  <p className="text-[10px] text-zinc-405 mt-1 font-mono uppercase tracking-wider">
                     PRODUCTION MANAGER CONTROL DECK • SERIAL {selectedLeadProd.production_id}
                   </p>
                 </div>
@@ -4689,7 +4702,9 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                 </button>
               </div>
 
-              <form onSubmit={handleSaveLeadDossier} className="space-y-4">
+              <form onSubmit={handleSaveLeadDossier} className="flex-1 flex flex-col overflow-hidden">
+                {/* Scrollable Body Wrapper */}
+                <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 text-xs text-zinc-300">
                 
                 {/* 2x2 grid layout inside popup */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -5069,36 +5084,38 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
 
                 </div>
 
-                {/* Submit actions */}
-                <div className="flex justify-end items-center gap-3 border-t border-zinc-900 pt-4">
-                  {leadEditor && leadEditor !== 'Unassigned' && (
-                    <button
-                      type="button"
-                      onClick={() => handleSendWhatsAppTask(selectedLeadProd, leadEditor, leadRemarks)}
-                      className="mr-auto px-4 py-2 bg-green-600 hover:bg-green-500 text-black font-black uppercase text-[10px] tracking-wider rounded-xl cursor-pointer shadow-lg transition-all duration-150 font-mono font-extrabold flex items-center gap-1.5"
-                    >
-                      <span>💬 Send Task on WhatsApp</span>
-                    </button>
-                  )}
+              </div> {/* Close scrollable body wrapper */}
+
+              {/* Sticky Footer */}
+              <div className="flex justify-end items-center gap-3 border-t border-zinc-900 p-4 sm:p-5 bg-zinc-950/40 shrink-0 sticky bottom-0 z-10 backdrop-blur-md">
+                {leadEditor && leadEditor !== 'Unassigned' && (
                   <button
                     type="button"
-                    onClick={() => setSelectedLeadProd(null)}
-                    className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs rounded-xl font-mono transition-all cursor-pointer border border-zinc-850"
+                    onClick={() => handleSendWhatsAppTask(selectedLeadProd, leadEditor, leadRemarks)}
+                    className="mr-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-[10px] tracking-wider rounded-xl cursor-pointer shadow-lg transition-all duration-150 font-mono font-extrabold flex items-center gap-1.5"
                   >
-                    Cancel
+                    <span>💬 Send Task on WhatsApp</span>
                   </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-2 bg-gradient-to-r from-violet-600 to-indigo-650 text-white font-black uppercase text-[10px] tracking-wider rounded-xl hover:from-violet-500 hover:to-indigo-500 cursor-pointer shadow-lg transition-all duration-150 font-mono font-extrabold"
-                  >
-                    Save Dossier Settings
-                  </button>
-                </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setSelectedLeadProd(null)}
+                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs rounded-xl font-mono transition-all cursor-pointer border border-zinc-850"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-gradient-to-r from-violet-600 to-indigo-650 text-white font-black uppercase text-[10px] tracking-wider rounded-xl hover:from-violet-500 hover:to-indigo-500 cursor-pointer shadow-lg transition-all duration-150 font-mono font-extrabold"
+                >
+                  Save Dossier Settings
+                </button>
+              </div>
 
-              </form>
+            </form>
 
-            </div>
           </div>
+        </div>
         );
       })()}
 
@@ -5845,7 +5862,7 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                             </div>
                             <div className="flex justify-between">
                               <span className="text-zinc-550 font-mono">Assigned Editor(s):</span>
-                              <span className="text-violet-400 font-bold">{activeWorkflowProd.editor_assigned || 'Unassigned'}</span>
+                              <span className="text-violet-400 font-bold">{cleanStaffName(activeWorkflowProd.editor_assigned)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-zinc-550 font-mono">Current Status:</span>
@@ -6271,14 +6288,15 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-zinc-950 border border-zinc-900 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl"
+              className="bg-zinc-950 border border-zinc-900 rounded-none sm:rounded-2xl w-full h-full sm:w-[95vw] sm:h-[95vh] md:w-[90vw] md:h-[90vh] lg:w-[90vw] lg:h-[90vh] max-w-5xl shadow-2xl relative flex flex-col overflow-hidden text-left bg-gradient-to-tr from-zinc-950 via-zinc-900 to-zinc-950"
             >
-              <div className="p-5 border-b border-zinc-900 flex justify-between items-center bg-[#0c0d10]">
+              {/* Sticky Header */}
+              <div className="p-4 sm:p-5 border-b border-zinc-900 flex justify-between items-center bg-zinc-950/40 sticky top-0 z-10 backdrop-blur-md shrink-0">
                 <div>
-                  <h3 className="text-sm font-black uppercase text-white font-mono tracking-wider">
+                  <h3 className="text-xs sm:text-sm font-black uppercase text-white font-mono tracking-wider">
                     {editingStaffMember ? 'Update Professional Credentials' : 'Onboard New Production Staff'}
                   </h3>
-                  <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                  <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
                     Configure official post-production specialties, indices, and contact details.
                   </p>
                 </div>
@@ -6294,7 +6312,9 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                 </button>
               </div>
 
-              <form onSubmit={handleSubmitStaff} className="p-6 space-y-4 font-mono text-xs">
+              <form onSubmit={handleSubmitStaff} className="flex-1 flex flex-col overflow-hidden">
+                {/* Scrollable Body Wrapper */}
+                <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 font-mono text-xs text-zinc-300">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Name */}
                   <div className="space-y-1">
@@ -6409,10 +6429,12 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                     </select>
                   </div>
                 </div>
+              </div> {/* Close scrollable body wrapper */}
 
-                <div className="p-4 border-t border-zinc-900 bg-zinc-900/30 -mx-6 -mb-6 space-y-3">
+                {/* Sticky Footer */}
+                <div className="p-4 border-t border-zinc-900 bg-zinc-950/40 shrink-0 sticky bottom-0 z-10 backdrop-blur-md space-y-3">
                   {(staffFormError || staffFormSuccess) && (
-                    <div className="px-6 text-left font-mono">
+                    <div className="px-4 text-left font-mono">
                       {staffFormError && (
                         <div className="text-[11px] text-rose-500 font-bold leading-relaxed">
                           ⚠️ {staffFormError}
@@ -6425,7 +6447,7 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                       )}
                     </div>
                   )}
-                  <div className="px-6 flex gap-2.5 justify-end">
+                  <div className="px-4 flex gap-2.5 justify-end">
                     <button
                       type="button"
                       disabled={staffFormSaving}
@@ -6433,14 +6455,14 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                         setIsStaffModalOpen(false);
                         setEditingStaffMember(null);
                       }}
-                      className="px-4 py-2 bg-zinc-900 hover:bg-zinc-850 text-zinc-400 hover:text-white rounded-xl cursor-pointer duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-zinc-900 hover:bg-zinc-850 text-zinc-300 hover:text-white rounded-xl cursor-pointer duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={staffFormSaving}
-                      className="px-5 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-zinc-950 font-black uppercase rounded-xl cursor-pointer hover:scale-[1.01] duration-150 shadow-md shadow-amber-500/5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                      className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl cursor-pointer"
                     >
                       {staffFormSaving ? (
                         <>
@@ -6467,14 +6489,15 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-zinc-950 border border-zinc-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
+              className="bg-zinc-950 border border-zinc-900 rounded-none sm:rounded-2xl w-full h-full sm:w-[95vw] sm:h-[95vh] md:w-[90vw] md:h-[90vh] lg:w-[90vw] lg:h-[90vh] max-w-4xl shadow-2xl relative flex flex-col overflow-hidden text-left bg-gradient-to-tr from-zinc-950 via-zinc-900 to-zinc-950"
             >
-              <div className="p-5 border-b border-zinc-900 flex justify-between items-center bg-[#0c0d10]">
+              {/* Sticky Header */}
+              <div className="p-4 sm:p-5 border-b border-zinc-900 flex justify-between items-center bg-zinc-950/40 sticky top-0 z-10 backdrop-blur-md shrink-0">
                 <div>
-                  <h3 className="text-sm font-black uppercase text-white font-mono tracking-wider">
+                  <h3 className="text-xs sm:text-sm font-black uppercase text-white font-mono tracking-wider">
                     Create Custom Production Role
                   </h3>
-                  <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                  <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
                     Newly created roles will instantly propagate across indices.
                   </p>
                 </div>
@@ -6487,7 +6510,9 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                 </button>
               </div>
 
-              <form onSubmit={handleSubmitCustomRole} className="p-6 space-y-4 font-mono text-xs">
+              <form onSubmit={handleSubmitCustomRole} className="flex-1 flex flex-col overflow-hidden">
+                {/* Scrollable Body Wrapper */}
+                <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 font-mono text-xs text-zinc-300">
                 <div className="space-y-1">
                   <label className="text-[10px] text-zinc-500 uppercase font-black block">Role Name</label>
                   <input
@@ -6502,10 +6527,12 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                     Examples: Premium Wedding Editor, Luxury Album Designer, Short Video Specialist.
                   </span>
                 </div>
+              </div> {/* Close scrollable body wrapper */}
 
-                <div className="p-4 border-t border-zinc-900 bg-zinc-900/30 -mx-6 -mb-6 space-y-3">
+                {/* Sticky Footer */}
+                <div className="p-4 border-t border-zinc-900 bg-zinc-950/40 shrink-0 sticky bottom-0 z-10 backdrop-blur-md space-y-3">
                   {(roleFormError || roleFormSuccess) && (
-                    <div className="px-6 text-left font-mono">
+                    <div className="px-4 text-left font-mono">
                       {roleFormError && (
                         <div className="text-[11px] text-rose-500 font-bold leading-relaxed">
                           ⚠️ {roleFormError}
@@ -6518,19 +6545,19 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                       )}
                     </div>
                   )}
-                  <div className="px-6 flex gap-2 justify-end">
+                  <div className="px-4 flex gap-2 justify-end">
                     <button
                       type="button"
                       disabled={roleFormSaving}
                       onClick={() => setIsCustomRoleModalOpen(false)}
-                      className="px-4 py-2 bg-zinc-900 hover:bg-zinc-850 text-zinc-400 hover:text-white rounded-xl cursor-pointer duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-zinc-900 hover:bg-zinc-855 text-zinc-300 hover:text-white rounded-xl cursor-pointer duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={roleFormSaving}
-                      className="px-5 py-2 bg-purple-650 hover:bg-purple-600 text-white font-extrabold uppercase rounded-xl cursor-pointer duration-150 shadow-md shadow-purple-500/5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                      className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl cursor-pointer"
                     >
                       {roleFormSaving ? (
                         <>
@@ -6557,15 +6584,16 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-zinc-950 border border-zinc-900 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl"
+              className="bg-zinc-950 border border-zinc-900 rounded-none sm:rounded-2xl w-full h-full sm:w-[95vw] sm:h-[95vh] md:w-[90vw] md:h-[90vh] lg:w-[90vw] lg:h-[90vh] max-w-5xl shadow-2xl relative flex flex-col overflow-hidden text-left bg-gradient-to-tr from-zinc-950 via-zinc-900 to-zinc-950"
             >
-              <div className="p-5 border-b border-zinc-900 flex justify-between items-center bg-[#0c0d10]">
+              {/* Sticky Header */}
+              <div className="p-4 sm:p-5 border-b border-zinc-900 flex justify-between items-center bg-zinc-950/40 sticky top-0 z-10 backdrop-blur-md shrink-0">
                 <div>
-                  <h3 className="text-sm font-black uppercase text-white font-mono tracking-wider">
+                  <h3 className="text-xs sm:text-sm font-black uppercase text-white font-mono tracking-wider">
                     {selectedMetricDetail.type} Detail Log
                   </h3>
-                  <p className="text-[11px] text-zinc-550 font-mono mt-0.5">
-                    Individual post-production assignment roster for <span className="text-amber-500">{selectedMetricDetail.memberName}</span>
+                  <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                    Individual post-production assignment roster for <span className="text-amber-500 font-extrabold">{selectedMetricDetail.memberName}</span>
                   </p>
                 </div>
                 <button
@@ -6577,7 +6605,8 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                 </button>
               </div>
 
-              <div className="p-6 max-h-[460px] overflow-y-auto w-full">
+              {/* Scrollable Body Wrapper */}
+              <div className="p-4 sm:p-5 overflow-y-auto flex-1 w-full space-y-4">
                 {selectedMetricDetail.list.length === 0 ? (
                   <div className="text-center text-zinc-550 font-mono py-12">
                     No active project assignment records found under this metric.
@@ -6641,13 +6670,14 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                     </table>
                   </div>
                 )}
-              </div>
+              </div> {/* Close scrollable body wrapper */}
 
-              <div className="p-4 border-t border-zinc-900 flex justify-end bg-[#0c0d10]">
+              {/* Sticky Footer */}
+              <div className="p-4 border-t border-zinc-900 flex justify-end bg-zinc-950/40 shrink-0 sticky bottom-0 z-10 backdrop-blur-md">
                 <button
                   type="button"
                   onClick={() => setSelectedMetricDetail(null)}
-                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-850 text-zinc-455 hover:text-white rounded-xl duration-150 cursor-pointer text-xs font-mono uppercase"
+                  className="px-5 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl duration-150 cursor-pointer text-xs font-mono uppercase border border-zinc-850"
                 >
                   Close Log
                 </button>
@@ -6667,19 +6697,19 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-zinc-950 border border-zinc-900 rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl relative"
+                className="bg-zinc-950 border border-zinc-900 rounded-none sm:rounded-3xl w-full h-full sm:w-[95vw] sm:h-[95vh] md:w-[90vw] md:h-[90vh] lg:w-[90vw] lg:h-[90vh] max-w-5xl shadow-2xl relative flex flex-col overflow-hidden text-left bg-gradient-to-tr from-zinc-955 via-zinc-900 to-zinc-955"
               >
-                <div className="relative overflow-hidden bg-[#0c0d11] p-6 border-b border-zinc-900 flex justify-between items-start">
+                <div className="relative overflow-hidden bg-[#0c0d11]/80 p-6 border-b border-zinc-900 flex justify-between items-start sticky top-0 z-10 backdrop-blur-md shrink-0">
                   <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
                   
                   <div className="flex items-center gap-4 relative z-10 font-sans">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-zinc-950 flex items-center justify-center text-3xl font-black font-mono shadow-xl relative overflow-hidden">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-zinc-950 flex items-center justify-center text-2xl sm:text-3xl font-black font-mono shadow-xl relative overflow-hidden">
                       {viewingStaffMember.name.charAt(0)}
                       <div className="absolute inset-0 bg-white/10 scale-120 rotate-12" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h2 className="text-xl font-black text-white uppercase tracking-wider font-mono">
+                        <h2 className="text-base sm:text-xl font-black text-white uppercase tracking-wider font-mono">
                           {viewingStaffMember.name}
                         </h2>
                         <span className={`px-2 py-0.5 rounded text-[9px] font-mono leading-none font-bold uppercase ${
@@ -6705,8 +6735,10 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                   </button>
                 </div>
 
-                {/* Info Grid */}
-                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Scrollable Body Wrapper */}
+                <div className="p-4 sm:p-6 overflow-y-auto flex-1 text-xs">
+                  {/* Info Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Left panel: Info cards */}
                   <div className="space-y-4 font-mono text-xs">
                     <h4 className="text-[10px] text-zinc-500 uppercase tracking-widest font-black border-b border-zinc-900 pb-1">
@@ -6800,12 +6832,14 @@ _Please access the PhotoCrew ERP Dashboard to synchronize progress._`;
                     </div>
                   </div>
                 </div>
+              </div> {/* Close scrollable body wrapper */}
 
-                <div className="p-4 border-t border-zinc-900 flex justify-end bg-[#0c0d10]">
+                {/* Sticky Footer */}
+                <div className="p-4 border-t border-zinc-900 flex justify-end bg-zinc-950/40 shrink-0 sticky bottom-0 z-10 backdrop-blur-md">
                   <button
                     type="button"
                     onClick={() => setViewingStaffMember(null)}
-                    className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-850 text-zinc-400 hover:text-white rounded-xl duration-150 cursor-pointer text-xs uppercase"
+                    className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-855 rounded-xl duration-150 cursor-pointer text-xs uppercase font-mono"
                   >
                     Close Profile Card
                   </button>

@@ -1098,20 +1098,25 @@ export const OperationsLeads: React.FC = () => {
       {/* Slide-over or Inline modal for Crew and Equipment Assignment */}
       {assigningOrderId && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl relative animate-in zoom-in duration-200">
-            <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-              <h3 className="text-xs font-mono font-black uppercase text-amber-500 flex items-center gap-2">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-none sm:rounded-2xl w-full h-full sm:w-[95vw] sm:h-[95vh] md:w-[90vw] md:h-[90vh] lg:w-[90vw] lg:h-[90vh] max-w-4xl shadow-2xl relative flex flex-col overflow-hidden text-left animate-in zoom-in duration-200">
+            
+            {/* Sticky Header */}
+            <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/40 sticky top-0 z-10 backdrop-blur-md shrink-0">
+              <h3 className="text-xs sm:text-sm font-mono font-black uppercase text-amber-500 flex items-center gap-2">
                 <span>⚡</span>
                 <span>Assign operations allocation ~ {assigningOrderId}</span>
               </h3>
               <button 
                 onClick={closeAssignModal}
-                className="text-zinc-500 hover:text-white font-bold cursor-pointer"
+                className="text-zinc-500 hover:text-white font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded-lg transition-all"
               >
                 ✕
               </button>
             </div>
-            <form onSubmit={handleAssignSubmit} className="p-5 space-y-4">
+            
+            <form onSubmit={handleAssignSubmit} className="flex-1 flex flex-col overflow-hidden">
+              {/* Scrollable Body Wrapper */}
+              <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 {/* ADVANCED ROLE ALLOCATOR */}
                 <div className="col-span-2 bg-zinc-950/60 p-3.5 rounded-xl border border-zinc-850 space-y-3">
@@ -1436,18 +1441,20 @@ export const OperationsLeads: React.FC = () => {
                   />
                 </div>
               </div>
+              </div> {/* Close scrollable body wrapper */}
 
-              <div className="flex justify-end gap-2 border-t border-zinc-800 pt-3">
+              {/* Sticky Footer */}
+              <div className="flex justify-end gap-2.5 p-4 sm:p-5 border-t border-zinc-800 bg-zinc-950/40 shrink-0 sticky bottom-0 z-10 backdrop-blur-md">
                 <button
                   type="button"
                   onClick={closeAssignModal}
-                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded-xl cursor-pointer"
+                  className="px-4 py-2 bg-zinc-805 hover:bg-zinc-800 text-zinc-350 hover:text-white text-xs rounded-xl cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-semibold text-xs rounded-xl cursor-pointer"
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-xs rounded-xl cursor-pointer uppercase tracking-wider"
                 >
                   Confirm Allocation
                 </button>
@@ -1500,10 +1507,20 @@ export const OperationsLeads: React.FC = () => {
       {/* Event Scheduling Modal (Step 2) */}
       {schedulingOrderId && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-zinc-805 rounded-2xl w-full max-w-sm shadow-2xl relative p-5 space-y-4">
-            <h3 className="text-sm font-bold text-sky-400 font-mono uppercase flex items-center gap-1.5 border-b border-zinc-800 pb-2">
-              <span>📅</span> Schedule Event ~ {schedulingOrderId}
-            </h3>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-none sm:rounded-2xl w-full h-full sm:w-[95vw] sm:h-[95vh] md:w-[90vw] md:h-[90vh] lg:w-[90vw] lg:h-[90vh] max-w-4xl shadow-2xl relative flex flex-col overflow-hidden text-left animate-in zoom-in duration-200">
+            
+            {/* Sticky Header */}
+            <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/40 sticky top-0 z-10 backdrop-blur-md shrink-0">
+              <h3 className="text-xs sm:text-sm font-bold text-sky-400 font-mono uppercase flex items-center gap-1.5">
+                <span>📅</span> Schedule Event ~ {schedulingOrderId}
+              </h3>
+              <button 
+                onClick={() => setSchedulingOrderId(null)}
+                className="text-zinc-500 hover:text-white font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded-lg transition-all"
+              >
+                ✕
+              </button>
+            </div>
             
             <form onSubmit={async (e) => {
               e.preventDefault();
@@ -1527,7 +1544,9 @@ export const OperationsLeads: React.FC = () => {
               } catch (err: any) {
                 alert(`Error scheduling event: ${err.message}`);
               }
-            }} className="space-y-4 text-left">
+            }} className="flex-1 flex flex-col overflow-hidden">
+              {/* Scrollable Body Wrapper */}
+              <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 text-xs">
               <div>
                 <label className="block text-[10px] font-bold text-zinc-400 uppercase font-mono mb-1">
                   Event Date *
@@ -1580,18 +1599,20 @@ export const OperationsLeads: React.FC = () => {
                   rows={2}
                 />
               </div>
+              </div> {/* Close scrollable body wrapper */}
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-zinc-800">
+              {/* Sticky Footer */}
+              <div className="flex justify-end gap-2.5 p-4 sm:p-5 border-t border-zinc-800 bg-zinc-950/40 shrink-0 sticky bottom-0 z-10 backdrop-blur-md">
                 <button
                   type="button"
                   onClick={() => setSchedulingOrderId(null)}
-                  className="px-4 py-2 bg-zinc-800 text-zinc-300 text-xs rounded-xl cursor-pointer hover:bg-zinc-700 transition"
+                  className="px-4 py-2 bg-zinc-805 text-zinc-350 text-xs rounded-xl cursor-pointer hover:bg-zinc-800 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold text-xs rounded-xl cursor-pointer"
+                  className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs rounded-xl cursor-pointer uppercase tracking-wider"
                 >
                   Save Schedule
                 </button>
@@ -1744,14 +1765,21 @@ Please report on time and update status through the portal.`;
       {/* Raw Footage Received Modal */}
       {receivingFootageOrderId && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-zinc-805 rounded-2xl w-full max-w-lg shadow-2xl relative p-5 max-h-[90vh] overflow-y-auto space-y-4 scrollbar-thin">
-            <h3 className="text-sm font-bold text-purple-400 font-mono uppercase flex items-center gap-1.5 border-b border-zinc-800 pb-2">
-              <span>💿</span> Receive Raw Footage
-            </h3>
-            <div className="text-[11px] text-zinc-400 leading-relaxed">
-              Upon confirmation, this order transitions to **Raw Footage Received** and escalates automatically to the Production Dashboard.
+          <div className="bg-zinc-900 border border-zinc-800 rounded-none sm:rounded-2xl w-full h-full sm:w-[95vw] sm:h-[95vh] md:w-[90vw] md:h-[90vh] lg:w-[90vw] lg:h-[90vh] max-w-4xl shadow-2xl relative flex flex-col overflow-hidden text-left animate-in zoom-in duration-200">
+            
+            {/* Sticky Header */}
+            <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/40 sticky top-0 z-10 backdrop-blur-md shrink-0">
+              <h3 className="text-xs sm:text-sm font-bold text-purple-400 font-mono uppercase flex items-center gap-1.5">
+                <span>💿</span> Receive Raw Footage ~ {receivingFootageOrderId}
+              </h3>
+              <button 
+                onClick={() => setReceivingFootageOrderId(null)}
+                className="text-zinc-500 hover:text-white font-bold cursor-pointer hover:bg-zinc-800 p-1.5 rounded-lg transition-all"
+              >
+                ✕
+              </button>
             </div>
-
+            
             <form onSubmit={async (e) => {
               e.preventDefault();
               
@@ -1814,7 +1842,9 @@ Please report on time and update status through the portal.`;
               } catch (error) {
                 alert(`Failed to save raw footage info: ${error}`);
               }
-            }} className="space-y-4 text-left">
+            }} className="flex-1 flex flex-col overflow-hidden">
+              {/* Scrollable Body Wrapper */}
+              <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 text-xs">
               <div>
                 <label className="block text-[10px] font-bold text-zinc-400 uppercase font-mono mb-1">
                   Raw Footage Link *
@@ -2064,18 +2094,20 @@ Please report on time and update status through the portal.`;
                   </div>
                 );
               })()}
+              </div> {/* Close scrollable body wrapper */}
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-zinc-850">
+              {/* Sticky Footer */}
+              <div className="flex justify-end gap-2.5 p-4 sm:p-5 border-t border-zinc-800 bg-zinc-950/40 shrink-0 sticky bottom-0 z-10 backdrop-blur-md">
                 <button
                   type="button"
                   onClick={() => setReceivingFootageOrderId(null)}
-                  className="px-4 py-2 bg-zinc-800 text-zinc-300 text-xs rounded-xl cursor-pointer hover:bg-zinc-700 transition"
+                  className="px-4 py-2 bg-zinc-805 text-zinc-350 text-xs rounded-xl cursor-pointer hover:bg-zinc-800 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-purple-650 hover:bg-purple-700 text-white font-semibold text-xs rounded-xl cursor-pointer"
+                  className="px-5 py-2 bg-purple-650 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl cursor-pointer uppercase tracking-wider"
                 >
                   Save & Move to Production
                 </button>
@@ -2094,12 +2126,28 @@ Please report on time and update status through the portal.`;
         
         return (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl relative p-5 space-y-4">
-              <h3 className="text-sm font-bold text-amber-500 font-mono uppercase flex items-center gap-1.5 border-b border-zinc-800 pb-2">
-                <span>🔄</span> Update Order Stage Status
-              </h3>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-none sm:rounded-2xl w-full h-full sm:w-[95vw] sm:h-[95vh] md:w-[90vw] md:h-[90vh] lg:w-[90vw] lg:h-[90vh] max-w-4xl shadow-2xl relative flex flex-col overflow-hidden text-left animate-in zoom-in duration-200">
               
-              <div className="space-y-3.5">
+              {/* Sticky Header */}
+              <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/40 sticky top-0 z-10 backdrop-blur-md shrink-0 border-b border-zinc-800 pb-2">
+                <h3 className="text-xs sm:text-sm font-bold text-amber-500 font-mono uppercase flex items-center gap-1.5">
+                  <span>🔄</span> Update Order Stage Status
+                </h3>
+                <button 
+                  onClick={() => {
+                    setUpdatingStatusOrderId(null);
+                    setNewSelectedStatus('');
+                    setStatusNotes('');
+                  }}
+                  className="text-zinc-500 hover:text-white font-bold cursor-pointer hover:bg-zinc-805 p-1.5 rounded-lg transition-all"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {/* Scrollable Body Wrapper */}
+              <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
+                
                 {/* Current Status display */}
                 <div>
                   <label className="block text-[10px] font-bold text-zinc-400 uppercase font-mono mb-1">
@@ -2147,10 +2195,10 @@ Please report on time and update status through the portal.`;
                     rows={3}
                   />
                 </div>
-              </div>
+              </div> {/* Close scrollable body wrapper */}
 
-              {/* Actions/Button */}
-              <div className="flex justify-end gap-2 pt-2 border-t border-zinc-850">
+              {/* Sticky Footer */}
+              <div className="flex justify-end gap-2.5 p-4 sm:p-5 border-t border-zinc-800 bg-zinc-950/40 shrink-0 sticky bottom-0 z-10 backdrop-blur-md">
                 <button
                   type="button"
                   onClick={() => {
@@ -2158,7 +2206,7 @@ Please report on time and update status through the portal.`;
                     setNewSelectedStatus('');
                     setStatusNotes('');
                   }}
-                  className="px-4 py-2 bg-zinc-800 text-zinc-300 text-xs rounded-xl cursor-pointer hover:bg-zinc-700 transition"
+                  className="px-4 py-2 bg-zinc-805 text-zinc-350 text-xs rounded-xl cursor-pointer hover:bg-zinc-800 transition"
                 >
                   Cancel
                 </button>
@@ -2198,7 +2246,7 @@ Please report on time and update status through the portal.`;
                       openRawFootageReceivedModal(ordToUpdate.order_id);
                     }
                   }}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-xl cursor-pointer transition animate-none"
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-xs rounded-xl cursor-pointer uppercase tracking-wider font-sans"
                 >
                   Update
                 </button>

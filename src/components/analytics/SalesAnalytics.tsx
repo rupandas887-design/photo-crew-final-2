@@ -39,17 +39,30 @@ export const SalesAnalytics: React.FC = () => {
     });
   }, [quotations, activeRange]);
 
+  const cleanStaffName = (name: string | undefined | null) => {
+    if (!name || name.trim() === '' || name === 'None') return 'Unassigned';
+    let clean = name.replace(/Unassigned[,+&\s]*/gi, '').replace(/[,+&\s]*Unassigned/gi, '').trim();
+    if (clean.replace(/[,+&\s]+/g, '') === '') return 'Unassigned';
+    return clean.replace(/^[,\s]+|[,\s]+$/g, '');
+  };
+
   // Compute Card metrics (leads and statuses as single source of truth)
   const totalLeadsCount = leads.length;
-  const newLeadsCount = leads.filter(l => l.status === 'New Lead').length;
-  const followUpPendingCount = leads.filter(l => l.status === 'Follow Up' || l.status === 'Follow-Up' || l.status === 'Follow-up Pending').length;
-  const quotationSentCount = leads.filter(l => l.status === 'Quotation Sent').length;
-  const negotiationCount = leads.filter(l => l.status === 'Negotiation').length;
+  const newLeadsCount = leads.filter(l => (l.current_status || l.status) === 'New Lead').length;
+  const followUpPendingCount = leads.filter(l => {
+    const s = l.current_status || l.status;
+    return s === 'Follow Up' || s === 'Follow-Up' || s === 'Follow-up Pending';
+  }).length;
+  const quotationSentCount = leads.filter(l => (l.current_status || l.status) === 'Quotation Sent').length;
+  const negotiationCount = leads.filter(l => (l.current_status || l.status) === 'Negotiation').length;
   
   // COUNT(leads where current_status = 'Order Confirmed')
-  const orderConfirmedCount = leads.filter(l => l.status === 'Order Confirmed').length;
+  const orderConfirmedCount = leads.filter(l => (l.current_status || l.status) === 'Order Confirmed').length;
   
-  const lostLeadsCount = leads.filter(l => l.status === 'Lost Lead' || l.status === 'Cancelled' || l.status === 'Lost').length;
+  const lostLeadsCount = leads.filter(l => {
+    const s = l.current_status || l.status;
+    return s === 'Lost Lead' || s === 'Cancelled' || s === 'Lost';
+  }).length;
   
   // (Order Confirmed ÷ Total Leads) × 100
   const conversionRateFloat = totalLeadsCount > 0 
@@ -89,16 +102,18 @@ export const SalesAnalytics: React.FC = () => {
     });
 
     filteredLeads.forEach(l => {
-      if (l.assigned_to && stats[l.assigned_to]) {
-        const s = stats[l.assigned_to];
+      const sp = cleanStaffName(l.assigned_to || l.sales_person);
+      if (sp && stats[sp]) {
+        const s = stats[sp];
         s.assigned += 1;
-        if (l.status !== 'New Lead') s.contacted += 1;
-        if (['Follow Up', 'Follow-Up', 'Follow-up Pending'].includes(l.status)) s.followUps += 1;
-        if (['Order Confirmed', 'Approved'].includes(l.status)) {
+        const status = l.current_status || l.status;
+        if (status !== 'New Lead') s.contacted += 1;
+        if (['Follow Up', 'Follow-Up', 'Follow-up Pending'].includes(status)) s.followUps += 1;
+        if (['Order Confirmed', 'Approved'].includes(status)) {
           s.converted += 1;
           s.revenue += (l.budget || 0);
         }
-        if (['Lost Lead', 'Cancelled', 'Lost'].includes(l.status)) s.lost += 1;
+        if (['Lost Lead', 'Cancelled', 'Lost'].includes(status)) s.lost += 1;
       }
     });
 

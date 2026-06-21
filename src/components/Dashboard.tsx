@@ -108,8 +108,15 @@ export const Dashboard: React.FC = () => {
     { label: 'Closed', stages: ['Closed', 'Payment Pending'], color: 'bg-zinc-500', ringColor: 'border-zinc-500/30', bgBadge: 'bg-zinc-500/10 text-zinc-400' },
   ];
 
+  const cleanStaffName = (name: string | undefined | null) => {
+    if (!name || name.trim() === '' || name === 'None') return 'Unassigned';
+    let clean = name.replace(/Unassigned[,+&\s]*/gi, '').replace(/[,+&\s]*Unassigned/gi, '').trim();
+    if (clean.replace(/[,+&\s]+/g, '') === '') return 'Unassigned';
+    return clean.replace(/^[,\s]+|[,\s]+$/g, '');
+  };
+
   const getStageCount = (stages: CurrentStage[]) => {
-    return leads.filter(l => stages.includes(l.status)).length;
+    return leads.filter(l => stages.includes((l.current_status || l.status) as CurrentStage)).length;
   };
 
   return (
@@ -630,8 +637,8 @@ export const Dashboard: React.FC = () => {
                     <td className="p-3 font-mono text-[10px]">
                       {operation ? (
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-zinc-400"><strong className="text-zinc-500">Photo:</strong> {operation.photographer_assigned || 'Unassigned'}</span>
-                          <span className="text-zinc-400"><strong className="text-zinc-500">Video:</strong> {operation.videographer_assigned || 'Unassigned'}</span>
+                          <span className="text-zinc-400"><strong className="text-zinc-500">Photo:</strong> {cleanStaffName(operation.photographer_assigned)}</span>
+                          <span className="text-zinc-400"><strong className="text-zinc-500">Video:</strong> {cleanStaffName(operation.videographer_assigned)}</span>
                           <span className="text-emerald-450 font-semibold">{operation.event_status || 'Scheduled'}</span>
                         </div>
                       ) : (
@@ -643,7 +650,7 @@ export const Dashboard: React.FC = () => {
                     <td className="p-3 font-mono text-[10px]">
                       {prd ? (
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-zinc-400"><strong className="text-zinc-500">Editor:</strong> {prd.editor_assigned || 'Unassigned'}</span>
+                          <span className="text-zinc-400"><strong className="text-zinc-500">Editor:</strong> {cleanStaffName(prd.editor_assigned)}</span>
                           <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase w-fit ${
                             prd.editing_status === 'Delivered' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/10' :
                             'bg-indigo-500/15 text-indigo-400 border border-indigo-500/10'

@@ -2413,13 +2413,29 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
 
             {/* In-place Add / Edit Package Modal */}
             {(isAddFormOpen || editingPackage) && (
-              <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-3 md:p-5 overflow-y-auto animate-fade-in text-left text-xs bg-black/70">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-5xl md:w-[90%] p-3.5 md:p-5 space-y-2.5 shadow-2xl relative text-slate-350">
-                  <h4 className="text-sm font-bold text-slate-100 font-mono tracking-wide border-b border-slate-800 pb-2 flex items-center gap-2">
-                    {editingPackage ? '✏️ Edit Service Package' : '✨ Define New Service Package'}
-                  </h4>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-2.5 text-xs text-slate-300">
+              <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-0 sm:p-4 overflow-hidden animate-fade-in text-left text-xs bg-black/70">
+                <div className="bg-slate-900 border border-slate-800 rounded-none sm:rounded-2xl w-full h-full sm:w-[95vw] sm:h-[95vh] md:w-[90vw] md:h-[90vh] lg:w-[90vw] lg:h-[90vh] max-w-5xl shadow-2xl relative flex flex-col overflow-hidden text-slate-350">
+                  {/* Sticky Header */}
+                  <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/40 sticky top-0 z-10 backdrop-blur-md shrink-0">
+                    <h4 className="text-sm font-bold text-slate-100 font-mono tracking-wide flex items-center gap-2">
+                      {editingPackage ? '✏️ Edit Service Package' : '✨ Define New Service Package'}
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAddFormOpen(false);
+                        setEditingPackage(null);
+                      }}
+                      className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-xl transition-all cursor-pointer border border-transparent hover:border-slate-700/50"
+                      title="Close"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Scrollable Body Container */}
+                  <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-2.5 text-xs text-slate-300">
                     {/* Row 1: Package Name | Package Category */}
                     <div>
                       <label className="block text-slate-400 font-semibold mb-1">Package Name</label>
@@ -2564,7 +2580,10 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800 mt-2">
+                  </div> {/* Close scrollable body container */}
+
+                  {/* Sticky Footer */}
+                  <div className="flex items-center justify-end gap-2.5 p-4 sm:p-5 border-t border-slate-800 bg-slate-950/40 shrink-0 sticky bottom-0 z-10 backdrop-blur-md">
                     <button
                       type="button"
                       onClick={() => {
@@ -2585,7 +2604,7 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
                         });
                         setCustomCategory('');
                       }}
-                      className="px-4 py-1.5 text-xs bg-slate-800 hover:bg-slate-755 text-slate-300 rounded-lg transition-all cursor-pointer font-medium border border-transparent"
+                      className="px-4 py-1.5 text-xs bg-slate-805 hover:bg-slate-800 text-slate-300 rounded-lg transition-all cursor-pointer font-medium border border-slate-800/60"
                     >
                       Cancel
                     </button>
@@ -2829,7 +2848,7 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
             <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex items-center justify-center p-0 sm:p-4 overflow-hidden animate-fade-in text-left">
               <form 
                 onSubmit={handleCreateSubmit}
-                className="bg-slate-900 border-0 sm:border border-slate-800 rounded-none sm:rounded-2xl w-full sm:w-[95vw] lg:w-[85vw] lg:max-w-[1200px] h-[100vh] sm:h-[90vh] shadow-2xl relative flex flex-col text-left overflow-hidden bg-gradient-to-tr from-slate-900 via-slate-900 to-slate-950"
+                className="bg-slate-900 border-0 sm:border border-slate-800 rounded-none sm:rounded-2xl w-full h-full sm:w-[95vw] sm:h-[95vh] md:w-[90vw] md:h-[90vh] lg:w-[90vw] lg:h-[90vh] max-w-7xl shadow-2xl relative flex flex-col text-left overflow-hidden bg-gradient-to-tr from-slate-900 via-slate-900 to-slate-950"
               >
             {/* Header: Sticky */}
             <div className="border-b border-slate-800/80 p-4 sm:p-5 flex items-center justify-between shrink-0 bg-slate-950/40 backdrop-blur-md">
@@ -3813,28 +3832,31 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
 
       {/* Confirmation Modal to Officially Log and Book Contract */}
       {showConfirmModal && selectedLead && (
-        <div className="fixed inset-0 bg-black/85 z-55 flex items-center justify-center p-4 backdrop-blur-md">
-          <div className="bg-slate-850 border border-slate-750 rounded-xl overflow-hidden max-w-md w-full shadow-2xl p-5 space-y-4">
+        <div className="fixed inset-0 bg-black/85 z-[9999] flex items-center justify-center p-0 sm:p-4 overflow-hidden backdrop-blur-md">
+          <div className="bg-slate-900 border border-slate-800 rounded-none sm:rounded-2xl w-full h-full sm:w-[95vw] sm:h-[95vh] md:w-[90vw] md:h-[90vh] lg:w-[90vw] lg:h-[90vh] max-w-4xl shadow-2xl relative flex flex-col overflow-hidden text-left bg-gradient-to-tr from-slate-900 via-slate-900 to-slate-950">
             
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            {/* Sticky Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/40 sticky top-0 z-10 backdrop-blur-md shrink-0">
               <h4 className="font-bold text-slate-100 text-sm flex items-center gap-1.5 font-sans">
                 <span>💍</span> Booking Confirmation & Contract Form
               </h4>
               <button 
                 onClick={() => setShowConfirmModal(false)}
-                className="text-slate-500 hover:text-slate-350 cursor-pointer"
+                className="text-slate-500 hover:text-slate-350 cursor-pointer p-1.5 hover:bg-slate-800 rounded-xl"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800 text-[11px] space-y-1">
-              <p className="text-slate-400">Client: <strong className="text-slate-200">{selectedLead.customer_name}</strong></p>
-              <p className="text-slate-400">Type: <strong className="text-slate-200">{selectedLead.event_type}</strong></p>
-              <p className="text-slate-400">Address: <strong className="text-slate-200">{selectedLead.event_location}</strong></p>
-            </div>
-
-            <form onSubmit={handleConfirmOrderSubmit} className="space-y-2.5 text-xs">
+            {/* Form wrapping body and footer */}
+            <form onSubmit={handleConfirmOrderSubmit} className="flex-1 flex flex-col overflow-hidden text-xs">
+              {/* Scrollable Body Wrapper */}
+              <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4 text-xs text-slate-300">
+                <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 text-xs space-y-1.5">
+                  <p className="text-slate-400">Client: <strong className="text-slate-205">{selectedLead.customer_name}</strong></p>
+                  <p className="text-slate-400">Type: <strong className="text-slate-205">{selectedLead.event_type}</strong></p>
+                  <p className="text-slate-400">Address: <strong className="text-slate-205">{selectedLead.event_location}</strong></p>
+                </div>
               
               {/* Product package */}
               <div>
@@ -3946,28 +3968,30 @@ export const SalesModule: React.FC<SalesModuleProps> = ({ activeSubTab: external
                 </strong>
               </div>
 
-              {/* Buttons */}
-              <div className="flex justify-end gap-2 border-t border-slate-800 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmModal(false)}
-                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-xl cursor-pointer text-xs"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  id="btn_confirm_submit"
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl inline-flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-950/20 text-xs"
-                >
-                  <span>Approve & Book Contract</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </form>
-          </div>
+            </div> {/* Close Scrollable Body Wrapper */}
+
+            {/* Sticky Footer */}
+            <div className="flex justify-end gap-2.5 p-4 sm:p-5 border-t border-slate-805 bg-slate-950/40 shrink-0 sticky bottom-0 z-10 backdrop-blur-md">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="px-3.5 py-2 bg-slate-805 hover:bg-slate-800 text-slate-300 rounded-xl cursor-pointer text-xs border border-slate-800/60"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                id="btn_confirm_submit"
+                className="px-4.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl inline-flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-950/15 text-xs"
+              >
+                <span>Approve & Book Contract</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </form>
         </div>
-      )}
+      </div>
+    )}
 
       {/* Mobile/Tablet Popup Modal for Lead Follow-up Details */}
       {selectedLead && (
